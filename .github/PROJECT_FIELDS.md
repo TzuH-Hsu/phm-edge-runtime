@@ -6,14 +6,14 @@ Every issue/PR attribute lives in **exactly one place**. Never dual-write the sa
 
 | Attribute | Home | Values / format |
 | --- | --- | --- |
-| Type (coarse) | `type:bug` / `type:feature` **labels** | 個人帳號沒有原生 issue type，Type 的家改成 label；兩者都沒有 = Task |
+| Type (coarse) | `type:bug` / `type:feature` **labels** | Personal accounts have no native issue types, so labels are Type's home; neither label present means Task |
 | Type (subtype) | `type:*` **labels** | `chore` / `ops` / `docs` / `security` — Task subtypes only |
 | Priority | `priority:*` **labels** | `p0` critical / `p1` milestone-blocking / `p2` important / `p3` polish |
-| Area | `area:*` **labels** | 本庫自身的領域，見 `.github/labels.yml` |
+| Area | `area:*` **labels** | This library's own domains — see `.github/labels.yml` |
 | Workflow status | **Project `Status` field** | `Backlog` / `Ready` / `In Progress` / `In Review` / `Blocked` / `Done` |
 | Target version | **Milestone** | `vX.Y.Z` releases, `gov-*` process phases; **no milestone = backlog** |
 | Effort | **Project `Effort` field** | `S` (≤ half a day) / `M` (≤ 2 days) / `L` (must be decomposed first) |
-| Owner | **Assignee** | 一個 issue 一位主要負責人（協作可多人）；**人名不進標題、文件表格或文件標頭** |
+| Owner | **Assignee** | One primary owner per issue (collaborators may be added); **never repeat a name in the title, in a documentation table, or in a document header** |
 | Agent eligibility | `agent-ok` **label** | present = AI agents may self-serve when Status is `Ready` |
 | Agent authorship | `by-agent` **label** | on PRs authored by an AI agent (audit trail) |
 | Dependencies | **Native issue relationships** | GitHub blocked-by / blocking |
@@ -31,7 +31,7 @@ The issue form you pick still matters (it decides the body template); GitHub sim
 2. **Labels are for facts an agent can write in one `gh` call.** Workflow state belongs to the Project board, not labels.
 3. **Milestone = commitment.** Assigning a milestone means "this ships in that version/phase". Backlog items carry no milestone.
 4. **Retire, don't accumulate.** When a label or field stops earning its keep, delete it everywhere (see `skills/labels-and-taxonomy/`).
-5. **Owner 只住 assignee。** 文件裡要指出負責人時連到 issue，不要寫人名——人名會過期，連結還會同時帶出狀態。作者身分不需要欄位，git 已經記了；「誰負責審這塊」的機制是 `.github/CODEOWNERS`，不是 markdown 表格。
+5. **Owner lives only in the assignee.** When documentation needs to point at who is responsible, link the issue rather than naming a person — names go stale, and the link carries status too. Authorship needs no field: git already records it. Review routing is `.github/CODEOWNERS`, not a markdown table.
 
 ## Where things are defined
 
