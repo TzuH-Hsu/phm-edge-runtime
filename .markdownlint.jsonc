@@ -1,0 +1,10 @@
+// Markdown linting rules for consistent documentation
+{
+  "default": true,
+  "MD013": false, // No line-length limit for prose files
+  "MD024": {
+    "siblings_only": true // Allow repeated headings across different sections
+  },
+  "MD033": false, // Allow inline HTML for badges and details elements
+  "MD041": true   // Require first line to be heading
+}

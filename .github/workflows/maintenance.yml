@@ -1,0 +1,59 @@
+name: Maintenance
+
+# Weekly docs-drift detector: runs the full external link check (unlike CI's
+# --offline pass) so dead links surface here instead of silently rotting.
+# Failures show up in the Actions tab and email the maintainer per GitHub's
+# default scheduled-workflow-failure notifications.
+
+on:
+  schedule:
+    - cron: "0 3 * * 1" # Monday 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  link-check:
+    # Runner: `ubuntu-latest`. This job only calls APIs and actions; it is over
+    # in seconds and bills as one rounded-up minute either way, so a smaller
+    # runner saves nothing. Override with the repository variable below.
+    runs-on: ${{ fromJSON(vars.MAINTENANCE_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # This job only reads (lychee walks ./**/*.md). Default shallow clone
+          # is correct here — unlike ci.yml, nothing scans git history — and the
+          # token stays out of .git/config.
+          persist-credentials: false
+
+      # Shares scripts/install-ci-tools.sh with ci.yml, so the lychee version
+      # pin and checksum verification exist in exactly one place. This step was
+      # previously ~40 lines of shell duplicated verbatim from ci.yml.
+      - name: Install lychee
+        run: make ci-tools TOOLS="lychee"
+
+      # `make maintenance` runs both weekly drift detectors — the external link
+      # check and the CI tool-version check (issue #14) — and aggregates their
+      # exit status, so one failing check never hides the other. That
+      # run-both-and-aggregate behaviour lives in the Makefile, not here, so
+      # `make maintenance` locally reproduces exactly what this job does
+      # (AGENTS.md: the Makefile is the only executable contract).
+      #
+      # The five tool pins live in scripts/install-ci-tools.sh and are invisible
+      # to Dependabot — no manifest exists for it to read — so this is the only
+      # thing watching them. Free on a public repo: hosted runners cost nothing,
+      # and it is three GitHub API calls plus two registry fetches per week.
+      - name: Run maintenance checks
+        env:
+          # Lets check-tool-versions.sh use `gh` (1,000 req/hr per repo) rather
+          # than the shared unauthenticated 60/hr-per-IP pool. Read-only public
+          # metadata; the job keeps its top-level `contents: read` permission.
+          GH_TOKEN: ${{ github.token }}
+        run: make maintenance

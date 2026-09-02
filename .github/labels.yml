@@ -1,0 +1,77 @@
+# Labels source of truth
+#
+# This file is the single source of truth for all repository labels.
+# Sync by re-running scripts/bootstrap.sh with the gh CLI.
+#
+# area:* labels track this library's own domains.
+#
+# Format (parsed by scripts/bootstrap.sh's awk-based parser — no yq
+# dependency): flat, unquoted, single-line `- name:` / `color:` /
+# `description:` entries only, in that order. No YAML quoting, no
+# multi-line block scalars, no inline comments after values.
+#
+
+labels:
+  - name: type:bug
+    color: d73a4a
+    description: Type home on personal accounts - defect
+
+  - name: type:feature
+    color: a2eeef
+    description: Type home on personal accounts - new capability
+
+  - name: type:chore
+    color: e4e669
+    description: Maintenance subtype (native type stays Task)
+
+  - name: type:ops
+    color: c2e0c6
+    description: Operations/infrastructure subtype (native type stays Task)
+
+  - name: type:docs
+    color: 0075ca
+    description: Documentation subtype (native type stays Task)
+
+  - name: type:security
+    color: d93f0b
+    description: Security subtype (native type stays Task)
+
+  - name: priority:p0
+    color: b60205
+    description: Critical — drop everything
+
+  - name: priority:p1
+    color: d93f0b
+    description: Blocking the current milestone
+
+  - name: priority:p2
+    color: fbca04
+    description: Important, scheduled
+
+  - name: priority:p3
+    color: c5def5
+    description: Nice to have / polish
+
+  - name: agent-ok
+    color: 7057ff
+    description: AI agents may pick this up self-service when status is Ready
+
+  - name: by-agent
+    color: bfd4f2
+    description: Authored by an AI agent (audit trail)
+
+  - name: area:update
+    color: 0e8a16
+    description: Update channels, artifact delivery, atomic switch and rollback
+
+  - name: area:health
+    color: 006b75
+    description: Health checks, watchdog and failure recovery
+
+  - name: area:docs
+    color: 1d76db
+    description: Documentation and guides
+
+  - name: area:ci
+    color: 6f42c1
+    description: CI workflows and automation

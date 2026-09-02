@@ -1,0 +1,28 @@
+# GitHub CODEOWNERS
+#
+# This file establishes code ownership and automatically requests reviews from designated owners
+# when paths matching these patterns are changed.
+#
+# Usage for solo devs:
+# - Leave this file empty (no active rules), or
+# - Add `* @your-username` to auto-request your own review on every PR
+#
+# Usage for teams:
+# - Add path-based rules to assign ownership domains
+# - Example: `/docs/ @docs-owner` requests @docs-owner's review for docs changes
+#
+# Syntax:
+#   <path-or-pattern> <@username> [<@username2>...]
+#
+# Resources:
+# - https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+
+# Example: Require docs ownership
+# /docs/                                   @docs-owner
+
+# Example: Require infrastructure ownership
+# /scripts/bootstrap.sh                    @infra-owner
+
+# Example: Solo dev auto-request
+# *                                        @your-username

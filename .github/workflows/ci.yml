@@ -1,0 +1,71 @@
+name: CI
+
+# The `ci` job below is this repository's ONLY required status check
+# (.github/rulesets/main-branch.json -> required_status_checks context "ci").
+# Renaming the job key breaks every merge until the ruleset is updated to match.
+#
+# NEVER add a workflow-level `paths:`, `paths-ignore:`, or `branches:` filter to
+# `on.pull_request`. A filtered-out workflow does not run at all, so the `ci`
+# check is never created, and the PR parks forever on "Expected - waiting for
+# status to be reported" with no failing job to point at. The repo becomes
+# unmergeable and the cause is not visible in the Actions tab.
+#
+# Job-level `if:` is the opposite trap: a skipped job reports SUCCESS and
+# satisfies the required check, letting unverified code merge past the gate.
+# Neither mechanism belongs on this job.
+#
+# There is no minutes argument for either. The job runs in ~15s and bills as one
+# rounded-up minute whether it does work or not, and this is a public repo where
+# hosted runners are free. Skipping saves nothing and risks everything.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    # Runner. `ubuntu-latest` on purpose, not by default.
+    #
+    # Standard GitHub-hosted runners are free for public repositories, so a
+    # smaller runner saves nothing here — it only costs wall-clock time.
+    # `ubuntu-slim` measured 1.5-6x slower on this job. Keep the full runner.
+    #
+    # No workflow edit is needed to switch: set the repository variable.
+    #   gh variable set CI_RUNNER_LABELS --body '["ubuntu-slim"]'
+    runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history: `make lint-secrets` runs `gitleaks detect`, which
+          # scans every commit, not just the tip. Do not shallow this.
+          fetch-depth: 0
+          # This job only reads. Keeping the token out of .git/config denies it
+          # to every later step (and to any tool binary they install).
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: lts/*
+
+      # Every tool version pin, plus the checksum verification, lives in
+      # scripts/install-ci-tools.sh (shared with maintenance.yml) so that
+      # `make check-tool-versions` has a single place to diff against upstream.
+      # This was three separate steps, one of them ~40 lines of shell duplicated
+      # verbatim in maintenance.yml.
+      - name: Install CI tools
+        run: make ci-tools TOOLS="markdownlint-cli2 yamllint actionlint gitleaks lychee"
+
+      - name: Run CI
+        run: make ci-pr

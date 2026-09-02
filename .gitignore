@@ -1,0 +1,27 @@
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# AI session memory and local agent settings (never commit)
+*.local.md
+.claude/settings.local.json
+
+# Logs
+*.log
+logs/
+
+# Dependencies (common ecosystems)
+node_modules/
+
+# SBOM output (make sbom)
+dist/

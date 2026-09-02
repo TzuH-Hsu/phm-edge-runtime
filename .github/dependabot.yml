@@ -1,0 +1,64 @@
+# Dependabot configuration
+#
+# Template repo only automates its own workflow dependencies.
+# Adopters should add language-specific ecosystems here.
+#
+# SCHEDULE SCOPE — `schedule:` governs *version* updates only.
+# Dependabot *security* updates are a separate feature: they are raised when an
+# advisory is published, not on this cron. Slowing the cadence below does not
+# slow security PRs (this requires Dependabot alerts + security updates enabled
+# in repo settings; both are on). Do not "fix" the monthly interval out of
+# security concern — it is deliberate noise reduction.
+#
+# See: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      # Monthly keeps PR/notification noise low. No `time:`/`timezone:` — they
+      # only bias the run within a day and add config surface for no benefit.
+      # `day:` is a weekly-only option and is deliberately omitted here.
+      interval: monthly
+    commit-message:
+      # Dependabot otherwise auto-detects `build(deps):`, which is outside the
+      # Conventional Commit types CONTRIBUTING.md declares
+      # (feat|fix|docs|chore|refactor|ci|test|perf). Squash merge puts the PR
+      # title on main, so the wrong prefix would land in permanent history and
+      # in release-please's parse input. `chore` is release-please's
+      # hidden-from-changelog bucket, which is what a dependency bump wants.
+      prefix: chore
+      include: scope
+    labels:
+      # Reuse the declared taxonomy in .github/labels.yml instead of letting
+      # Dependabot mint its own `dependencies`/`github_actions` labels —
+      # undeclared labels are prune candidates for scripts/bootstrap.sh, so
+      # they would be deleted and re-created forever. See ADR-0003.
+      #
+      # `area:ci` ONLY — deliberately no `type:*` subtype. Unlike `schedule:`,
+      # the `labels:` option DOES apply to security-update PRs as well
+      # (docs: dependabot-options-reference#labels, since we set no
+      # `target-branch`). A `type:chore` here would therefore mislabel an
+      # advisory-driven PR that belongs under `type:security`, making the
+      # metadata contract untrue and hiding real security work from
+      # `label:type:security` triage. Only add labels that are correct for
+      # BOTH version and security updates.
+      - area:ci
+    # Reviewers: Dependabot's `reviewers:` key is deprecated — use
+    # .github/CODEOWNERS instead, which also covers human-authored PRs.
+    # Assignees: adopters may want their own login here. Left unset because
+    # this is a template repo and a hardcoded username would be wrong in forks.
+    # assignees:
+    #   - your-username
+    groups:
+      actions:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 5
+    # Adopters: add npm, python, go, etc. as needed
+    # - package-ecosystem: npm
+    #   directory: "/"
+    #   schedule:
+    #     interval: monthly

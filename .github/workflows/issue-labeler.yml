@@ -1,0 +1,160 @@
+name: Issue labeler
+
+# Syncs priority:*, type:*, area:*, and agent-ok labels from the issue form
+# fields on open/edit. The issue body is untrusted input — it is only ever
+# read inside the actions/github-script JS sandbox (context.payload.issue.body),
+# never interpolated into a shell `run:` step.
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    # Runner: `ubuntu-latest`. This job only calls APIs and actions; it is over
+    # in seconds and bills as one rounded-up minute either way, so a smaller
+    # runner saves nothing. Override with the repository variable below.
+    runs-on: ${{ fromJSON(vars.AUTOMATION_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Sync form-managed labels
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            // Parses the GitHub issue-form markdown body (### <Label> headings)
+            // and syncs the form-managed label families to match. Only ever
+            // touches priority:*, type:*, area:*, and agent-ok — every other
+            // label on the issue is left alone.
+            const body = context.payload.issue.body || '';
+
+            // Split the body into sections keyed by "### <Heading>".
+            function parseSections(text) {
+              const lines = text.split(/\r?\n/);
+              const sections = {};
+              let current = null;
+              for (const line of lines) {
+                const heading = line.match(/^###\s+(.+?)\s*$/);
+                if (heading) {
+                  current = heading[1].trim();
+                  sections[current] = [];
+                  continue;
+                }
+                if (current) {
+                  sections[current].push(line);
+                }
+              }
+              return sections;
+            }
+
+            const sections = parseSections(body);
+
+            function sectionText(name) {
+              const raw = sections[name];
+              if (!raw) return '';
+              return raw.join('\n').trim();
+            }
+
+            // Dropdown answers render as a plain text line under the heading.
+            // Missing/optional answers render as "_No response_".
+            function dropdownPrefix(name) {
+              const text = sectionText(name);
+              if (!text || text === '_No response_') return null;
+              const firstLine = text.split(/\r?\n/)[0].trim().toLowerCase();
+              return firstLine;
+            }
+
+            // Fixed allowlists — the issue body is untrusted input, so every
+            // label this script adds must be validated against a hardcoded
+            // constant, never derived from body text alone (addLabels
+            // auto-creates unknown labels, so an unconstrained regex match
+            // would let a crafted body mint arbitrary labels).
+            const ALLOWED_PRIORITIES = ['p0', 'p1', 'p2', 'p3'];
+            const ALLOWED_SUBTYPES = ['chore', 'ops', 'docs', 'security'];
+            // Must stay in sync with the area:* entries in .github/labels.yml;
+            // adopters editing area labels update both.
+            const ALLOWED_AREAS = ['area:docs', 'area:skills', 'area:ci', 'area:governance'];
+
+            const desired = new Set();
+
+            // ### Priority -> priority:pX (dropdown, e.g. "p0 — Critical, drop everything")
+            const priorityLine = dropdownPrefix('Priority');
+            if (priorityLine) {
+              const match = priorityLine.match(/^(p[0-3])\b/);
+              if (match && ALLOWED_PRIORITIES.includes(match[1])) desired.add(`priority:${match[1]}`);
+            }
+
+            // ### Subtype -> type:X (task form only; dropdown, e.g. "chore — Maintenance")
+            const subtypeLine = dropdownPrefix('Subtype');
+            if (subtypeLine) {
+              const match = subtypeLine.match(/^(chore|ops|docs|security)\b/);
+              if (match && ALLOWED_SUBTYPES.includes(match[1])) desired.add(`type:${match[1]}`);
+            }
+
+            // ### Area -> area:* (checkboxes, e.g. "- [x] area:docs — Documentation and guides")
+            const areaText = sectionText('Area');
+            if (areaText) {
+              const checkedLines = areaText.split(/\r?\n/).filter((line) => /^-\s*\[[xX]\]/.test(line));
+              for (const line of checkedLines) {
+                const match = line.match(/area:[a-z-]+/);
+                if (match && ALLOWED_AREAS.includes(match[0])) desired.add(match[0]);
+              }
+            }
+
+            // ### Agent eligibility -> agent-ok (single checkbox)
+            const agentText = sectionText('Agent eligibility');
+            if (agentText) {
+              const checked = agentText.split(/\r?\n/).some((line) => /^-\s*\[[xX]\]/.test(line));
+              if (checked) desired.add('agent-ok');
+            }
+
+            // Only these families are form-managed; every other label is left untouched.
+            function isFormManaged(label) {
+              return (
+                label.startsWith('priority:') ||
+                label.startsWith('type:') ||
+                label.startsWith('area:') ||
+                label === 'agent-ok'
+              );
+            }
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.issue.number;
+
+            const currentLabels = (context.payload.issue.labels || []).map((l) => l.name);
+            const currentManaged = currentLabels.filter(isFormManaged);
+
+            const toAdd = [...desired].filter((label) => !currentLabels.includes(label));
+            // On 'edited', drop previously form-managed labels the user un-selected.
+            // On 'opened' this is a no-op (nothing managed exists yet).
+            const toRemove = currentManaged.filter((label) => !desired.has(label));
+
+            if (toAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number,
+                labels: toAdd,
+              });
+            }
+
+            for (const label of toRemove) {
+              await github.rest.issues.removeLabel({
+                owner,
+                repo,
+                issue_number,
+                name: label,
+              });
+            }
+
+            core.info(`Desired: ${[...desired].join(', ') || '(none)'}`);
+            core.info(`Added: ${toAdd.join(', ') || '(none)'}`);
+            core.info(`Removed: ${toRemove.join(', ') || '(none)'}`);

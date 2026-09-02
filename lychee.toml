@@ -1,0 +1,19 @@
+# Link checker configuration for CI/CD workflows and maintenance
+# CI PR runs use --offline flag (internal links only)
+# Weekly maintenance workflow runs the full external check with these settings
+
+timeout = 20
+max_retries = 2
+
+accept = ["200..299", "403", "429"]
+
+exclude = [
+  "^mailto:",
+  "^https?://localhost",
+  "^https?://127\\.0\\.0\\.1",
+  "^https?://example\\.com"
+]
+
+exclude_all_private = true
+
+exclude_path = ["node_modules"]

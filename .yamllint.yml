@@ -1,0 +1,11 @@
+# YAML linting configuration with relaxed defaults
+extends: relaxed
+
+rules:
+  line-length: disable
+  truthy:
+    check-keys: false # GitHub workflows use 'on:' key which needs special handling
+  document-start: disable
+
+ignore: |
+  node_modules/

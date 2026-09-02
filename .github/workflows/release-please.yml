@@ -1,0 +1,43 @@
+name: release-please
+
+# Maintains a running release PR on main (version bump + CHANGELOG.md, from
+# Conventional Commits) via release-please's "simple" release-type, which
+# maintains a version.txt at repo root in addition to CHANGELOG.md — that's
+# expected/acceptable for this release-type, not a leftover artifact.
+#
+# HUMAN GATE — see ADR-0002 (docs/adr/ADR-0002-release-flow.md):
+# release-please and CI both trigger on push:main, so an unverified commit
+# could otherwise reach the release PR. The branch ruleset requires the `ci`
+# status check before merge, so the release PR can't merge red — but that
+# protection only holds if a human reviews and merges it manually.
+# NEVER enable auto-merge on the release PR this action opens.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    # Runner: `ubuntu-latest`. This job only calls APIs and actions; it is over
+    # in seconds and bills as one rounded-up minute either way, so a smaller
+    # runner saves nothing. Override with the repository variable below.
+    runs-on: ${{ fromJSON(vars.RELEASE_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write # release-please labels its release PRs
+    steps:
+      - name: Run release-please
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

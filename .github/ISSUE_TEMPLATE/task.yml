@@ -1,0 +1,77 @@
+name: Task
+description: Create a unit of work
+type: Task
+
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line description of the task
+    validations:
+      required: true
+
+  - type: dropdown
+    id: subtype
+    attributes:
+      label: Subtype
+      description: Maps to type:* label
+      options:
+        - "chore — Maintenance"
+        - "ops — Operations/infrastructure"
+        - "docs — Documentation"
+        - "security — Security"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Background, related work, or dependencies
+      placeholder: Why is this task needed? What work does it unblock?
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How do we know this task is complete?
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: Impact and urgency
+      options:
+        - "p0 — Critical, drop everything"
+        - "p1 — Blocking the current milestone"
+        - "p2 — Important, scheduled"
+        - "p3 — Nice to have / polish"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: area
+    attributes:
+      label: Area
+      description: Primary domain (select all that apply)
+      options:
+        - label: "area:docs — Documentation and guides"
+        - label: "area:skills — Skills knowledge modules"
+        - label: "area:ci — CI workflows and automation"
+        - label: "area:governance — Labels, templates, metadata contract, process"
+
+  - type: checkboxes
+    id: agent_eligibility
+    attributes:
+      label: Agent eligibility
+      options:
+        - label: "AI agents may pick this up (adds agent-ok)"
