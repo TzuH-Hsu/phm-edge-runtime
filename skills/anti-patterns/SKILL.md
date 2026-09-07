@@ -33,7 +33,7 @@ Each entry: symptom → why it happens → the fix (this repo's mechanism).
 | Documentation drift | Docs describe the system that used to exist | Code changed; the doc two folders away didn't | One-home-per-fact linking, CI link checks, delete-in-obsoleting-PR (`docs-hygiene`) |
 | Silent validation skip | "tests didn't apply" said nowhere | Skipping is quiet; declaring feels like admitting fault | `RISK:` line convention — every skipped level is stated (`validation-ladder`) |
 | Deadline refactor cramming | Big refactor jammed into a release under pressure | "While we're in here" scope-creep near a cut | Refactors get their own milestone; timebox kills scope, not the deadline (`milestone-planning`) |
-| Agent over-trust | Merging agent PRs on the agent's own success claim | Green-looking summary reads like proof | `by-agent` label + claims-are-claims review + cross-family review (`agent-workflow`) |
+| Agent over-trust | Merging agent PRs on the agent's own success claim | Green-looking summary reads like proof | Commit trailers + claims-are-claims review + cross-family review (`agent-workflow`) |
 
 Reading an entry in the wild:
 
@@ -45,7 +45,7 @@ Fix     : delete the Project Priority field; label is the single home (ADR-0003)
 
 Agent over-trust is the one that scales with agent adoption — the same model
 that wrote the code is the worst judge of whether it works. The counter is
-structural: a `by-agent` label flags provenance, review treats the PR body as
+structural: commit trailers and the PR author flag provenance, review treats the PR body as
 claims to verify, and a *different* agent family (or a human) does the check.
 
 ## Pitfalls

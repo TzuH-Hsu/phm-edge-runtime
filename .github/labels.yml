@@ -52,14 +52,6 @@ labels:
     color: c5def5
     description: Nice to have / polish
 
-  - name: agent-ok
-    color: 7057ff
-    description: AI agents may pick this up self-service when status is Ready
-
-  - name: by-agent
-    color: bfd4f2
-    description: Authored by an AI agent (audit trail)
-
   - name: area:update
     color: 0e8a16
     description: Update channels, artifact delivery, atomic switch and rollback

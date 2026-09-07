@@ -52,8 +52,8 @@ The Makefile is the only executable contract in this repository. CI calls make t
 
 ## AI agent conventions
 
-- **Work queue**: issues labeled `agent-ok` with Project status `Ready` are self-service — an agent may pick one up without asking. Anything not labeled `agent-ok` needs an explicit human request.
-- **Audit trail**: label PRs you author with `by-agent`.
+- **Starting work**: an agent starts on an issue only when a human assigns it or names it in the conversation. There is no self-service queue; Project status `Ready` means "scoped", not "claimable by agents".
+- **Provenance**: commit trailers (`Co-Authored-By`) and the PR author account are the audit trail. No provenance labels, no attribution line in the PR body.
 - **Capability boundaries**: agents may manage issues, labels, milestones, and Project items via `gh`; agents must NOT perform destructive operations (deleting Project fields, force-pushing, rewriting history, changing repo settings) without explicit human approval in the conversation.
 - **Session handoff**: long-running work may keep exactly one gitignored `HANDOVER.local.md` (hard cap ~150 lines, rewrite — don't append — at session end). Durable knowledge gets promoted to issues, ADRs, or skills, then deleted from the handoff file. See `skills/context-handoff/`.
 
@@ -63,7 +63,7 @@ Load a skill only when its "load when" condition matches your current task.
 
 | Skill | Load when |
 | --- | --- |
-| [agent-workflow](skills/agent-workflow/SKILL.md) | An AI agent picks up, executes, or hands off repository work — queue, boundaries, audit. |
+| [agent-workflow](skills/agent-workflow/SKILL.md) | An AI agent picks up, executes, or hands off repository work — assignment, boundaries, honest reporting. |
 | [anti-patterns](skills/anti-patterns/SKILL.md) | Reviewing repository health or designing process — named failure modes and their fixes. |
 | [context-handoff](skills/context-handoff/SKILL.md) | Pausing, resuming, or handing off work across sessions — handoff file discipline. |
 | [branch-and-commit](skills/branch-and-commit/SKILL.md) | Starting work — branch naming, Conventional Commits, issue linkage. |
