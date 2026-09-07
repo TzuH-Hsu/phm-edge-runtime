@@ -1,6 +1,6 @@
 name: Issue labeler
 
-# Syncs priority:*, type:*, area:*, and agent-ok labels from the issue form
+# Syncs priority:*, type:*, and area:* labels from the issue form
 # fields on open/edit. The issue body is untrusted input — it is only ever
 # read inside the actions/github-script JS sandbox (context.payload.issue.body),
 # never interpolated into a shell `run:` step.
@@ -32,7 +32,7 @@ jobs:
           script: |
             // Parses the GitHub issue-form markdown body (### <Label> headings)
             // and syncs the form-managed label families to match. Only ever
-            // touches priority:*, type:*, area:*, and agent-ok — every other
+            // touches priority:*, type:*, and area:* — every other
             // label on the issue is left alone.
             const body = context.payload.issue.body || '';
 
@@ -109,20 +109,12 @@ jobs:
               }
             }
 
-            // ### Agent eligibility -> agent-ok (single checkbox)
-            const agentText = sectionText('Agent eligibility');
-            if (agentText) {
-              const checked = agentText.split(/\r?\n/).some((line) => /^-\s*\[[xX]\]/.test(line));
-              if (checked) desired.add('agent-ok');
-            }
-
             // Only these families are form-managed; every other label is left untouched.
             function isFormManaged(label) {
               return (
                 label.startsWith('priority:') ||
                 label.startsWith('type:') ||
-                label.startsWith('area:') ||
-                label === 'agent-ok'
+                label.startsWith('area:')
               );
             }
 

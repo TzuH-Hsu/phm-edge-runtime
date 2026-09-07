@@ -625,7 +625,7 @@ phase_project() {
                 fieldId: $fieldId,
                 singleSelectOptions: [
                   {name: "Backlog", color: GRAY, description: "Not committed yet"},
-                  {name: "Ready", color: GREEN, description: "Scoped and claimable (agent-ok issues are self-service here)"},
+                  {name: "Ready", color: GREEN, description: "Scoped and claimable"},
                   {name: "In Progress", color: YELLOW, description: "Being worked"},
                   {name: "In Review", color: ORANGE, description: "PR open, awaiting review"},
                   {name: "Blocked", color: RED, description: "Waiting on dependency or decision"},
@@ -652,7 +652,7 @@ phase_project() {
     fi
   fi
 
-  manual "GitHub's API cannot create views — follow docs/setup/project-views.md for the 3 views"
+  manual "GitHub's API cannot create views — follow docs/setup/project-views.md for the 2 views (plus an optional Stakeholder view)"
 
   record_phase "4. Project" "ok"
 }

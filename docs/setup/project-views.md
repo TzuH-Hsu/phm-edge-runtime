@@ -73,19 +73,7 @@ Use **+ (new view)** at the top of the Project for each of these.
 - Purpose: release/phase planning — what's committed to `vX.Y.Z` or `gov-*`
   versus sitting in the backlog (no milestone).
 
-### View 3 — "Agent queue"
-
-- Layout: **Table** (or **Board** grouped by `Status`, either works)
-- Filter: `label:agent-ok status:Ready`
-- Sort: by `priority:*` label (`p0` first) — GitHub sorts labels
-  alphabetically by default, so a manual sort or a saved custom sort by
-  label name gets `priority:p0` ahead of `priority:p1`, etc.
-- Purpose: this is the literal work queue described in `AGENTS.md` — "issues
-  labeled `agent-ok` with Project status `Ready` are self-service". An agent
-  should be able to open this view and know exactly what it may pick up
-  without asking.
-
-### View 4 — "Stakeholder" (optional)
+### View 3 — "Stakeholder" (optional)
 
 - Layout: **Table**
 - Filter: current milestone (e.g. `milestone:"v0.1.0"`)
@@ -101,7 +89,6 @@ Use **+ (new view)** at the top of the Project for each of these.
 - [ ] `Effort`: S / M / L (no other custom fields)
 - [ ] View: Board (grouped by Status)
 - [ ] View: Milestones (table, grouped by Milestone)
-- [ ] View: Agent queue (`label:agent-ok status:Ready`, sorted by priority)
 - [ ] View: Stakeholder (optional, current-milestone filter, minimal columns)
 
 ## See also

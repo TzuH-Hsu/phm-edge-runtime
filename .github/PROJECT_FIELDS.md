@@ -14,8 +14,6 @@ Every issue/PR attribute lives in **exactly one place**. Never dual-write the sa
 | Target version | **Milestone** | `vX.Y.Z` releases, `gov-*` process phases; **no milestone = backlog** |
 | Effort | **Project `Effort` field** | `S` (≤ half a day) / `M` (≤ 2 days) / `L` (must be decomposed first) |
 | Owner | **Assignee** | One primary owner per issue (collaborators may be added); **never repeat a name in the title, in a documentation table, or in a document header** |
-| Agent eligibility | `agent-ok` **label** | present = AI agents may self-serve when Status is `Ready` |
-| Agent authorship | `by-agent` **label** | on PRs authored by an AI agent (audit trail) |
 | Dependencies | **Native issue relationships** | GitHub blocked-by / blocking |
 | Epic membership | **Native sub-issues** | parent issue with sub-issues; no `epic:*` labels |
 

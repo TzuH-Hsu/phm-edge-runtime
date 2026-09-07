@@ -66,10 +66,3 @@ body:
       placeholder: Paste output, logs, or attach files (optional)
     validations:
       required: false
-
-  - type: checkboxes
-    id: agent_eligibility
-    attributes:
-      label: Agent eligibility
-      options:
-        - label: "AI agents may pick this up (adds agent-ok)"

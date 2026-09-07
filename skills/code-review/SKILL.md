@@ -75,6 +75,6 @@ gh pr merge <PR#> --squash
 ## Related
 
 - `CONTRIBUTING.md` — solo-maintainer self-merge policy
-- `AGENTS.md` — agent capability boundaries and audit trail conventions
+- `AGENTS.md` — agent capability boundaries and provenance conventions
 - `` `skills/pr-authoring/SKILL.md` `` — the RISK convention this review practice depends on
 - `` `skills/branch-and-commit/SKILL.md` `` — commit hygiene that makes diffs reviewable

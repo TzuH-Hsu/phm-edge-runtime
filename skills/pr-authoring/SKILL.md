@@ -40,9 +40,7 @@ human reviewer and for an agent reviewing another agent's work.
    list and the RISK lines.
 5. Use `Closes #N` to link the issue — one issue per PR. Don't bundle unrelated
    changes just because they happened to be worked on together.
-6. Agents label their own PRs `by-agent` for the audit trail. This is separate from
-   `agent-ok` on the issue (eligibility to pick up work vs. authorship record).
-7. Re-run `make verify` after every revision to the PR, not just before the first
+6. Re-run `make verify` after every revision to the PR, not just before the first
    push. A review comment that changes code invalidates the previous green run.
 
 ## How
@@ -51,9 +49,6 @@ human reviewer and for an agent reviewing another agent's work.
 # Open a PR with a Conventional Commit title, linked issue, template intact
 gh pr create --title "feat: add label sync phase to bootstrap" \
   --body-file .github/PULL_REQUEST_TEMPLATE.md
-
-# Label agent authorship
-gh pr edit <PR#> --add-label "by-agent"
 
 # Re-verify before each push after review feedback
 make verify && git push
@@ -79,8 +74,6 @@ Rollback: revert this PR; no migrations or external state changed
   new issue instead, keep the PR mapped to one `Closes #N`.
 - Pushing a fix in response to review and calling the ladder still green from the
   first run — re-run `make verify` after every revision.
-- Forgetting the `by-agent` label on agent-authored PRs — breaks the audit trail this
-  repo relies on in place of a heavier review gate.
 
 ## Related
 

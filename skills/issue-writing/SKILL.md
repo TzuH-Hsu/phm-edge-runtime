@@ -29,12 +29,7 @@ safe to hand to an AI agent without a live conversation.
 5. Express dependencies with native blocked-by/blocking relationships, not a
    `blocked` label or a sentence buried in the description. Express epics with native
    sub-issues, not an `epic:*` label.
-6. Only check "AI agents may pick this up" (`agent-ok`) when the issue is genuinely
-   self-service: scope is unambiguous, acceptance criteria are fully testable, no
-   destructive operation is implied, and no step requires human judgment calls not
-   already resolved in the issue text. Leave it unchecked for anything ambiguous,
-   irreversible, or interpretive — an agent will otherwise guess.
-7. Triaging an existing issue means tightening it to meet rules 1–6, not just
+6. Triaging an existing issue means tightening it to meet rules 1–5, not just
    re-labeling it. If acceptance criteria are missing or untestable, add them before
    moving status off `Backlog`.
 
@@ -46,9 +41,6 @@ gh issue create --repo <owner>/<repo>
 
 # Inspect an issue's current metadata footprint before triaging
 gh issue view 42 --repo <owner>/<repo> --json title,labels,milestone,body
-
-# List issues that are agent-ready right now
-gh issue list --repo <owner>/<repo> --label agent-ok --search "status:Ready"
 ```
 
 Good acceptance criteria read like a test plan:
@@ -60,7 +52,7 @@ Good acceptance criteria read like a test plan:
 ```
 
 Bad acceptance criteria ("works correctly", "improve performance") give an agent or a
-reviewer nothing to check against — rewrite before requesting `agent-ok`.
+reviewer nothing to check against — rewrite before handing the issue to anyone.
 
 ## Pitfalls
 
@@ -68,8 +60,8 @@ reviewer nothing to check against — rewrite before requesting `agent-ok`.
   — now there are two sources and they can disagree.
 - Writing acceptance criteria as a restatement of the summary instead of a checklist
   a reviewer can tick off one by one.
-- Checking `agent-ok` on an issue whose "acceptance criteria" is really "figure out
-  the right approach" — that is a human-judgment task, not a self-service one.
+- Handing an agent an issue whose "acceptance criteria" is really "figure out the
+  right approach" — that is a human-judgment task; resolve it in the issue first.
 - Using an `epic:*` label or a "blocked by #12" sentence instead of native sub-issues
   and blocked-by links — invisible to automation and easy to let go stale.
 - Opening a blank issue to "save time" — it skips native type assignment and the
