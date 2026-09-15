@@ -97,7 +97,12 @@ jobs:
             const FORM_MANAGED_TYPES = ALLOWED_SUBTYPES.map((s) => `type:${s}`);
             // Must stay in sync with the area:* entries in .github/labels.yml;
             // adopters editing area labels update both.
-            const ALLOWED_AREAS = ['area:docs', 'area:skills', 'area:ci', 'area:governance'];
+            const ALLOWED_AREAS = [
+              'area:update',
+              'area:health',
+              'area:docs',
+              'area:ci',
+            ];
 
             const desired = new Set();
 

@@ -64,7 +64,7 @@ body:
       label: Area
       description: Primary domain (select all that apply)
       options:
+        - label: "area:update — Update channels, artifact delivery, atomic switch and rollback"
+        - label: "area:health — Health checks, watchdog and failure recovery"
         - label: "area:docs — Documentation and guides"
-        - label: "area:skills — Skills knowledge modules"
         - label: "area:ci — CI workflows and automation"
-        - label: "area:governance — Labels, templates, metadata contract, process"
