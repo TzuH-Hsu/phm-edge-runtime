@@ -167,9 +167,14 @@ EOF
 echo '{".": "0.0.0"}' > .release-please-manifest.json
 ```
 
-`release-please-config.json` keeps `"release-as": "0.1.0"` after de-templating
-— your first release is v0.1.0. Remove that key once the first release ships
-so subsequent releases follow normal Conventional Commit version bumps.
+`release-please-config.json` carries `"initial-version": "0.1.0"`, which is
+what makes your first release v0.1.0. release-please reads that key only while
+the repository has no release at all; after the first one ships it is inert, so
+there is nothing to remove. Without it release-please numbers the first release
+**1.0.0** — the manifest's `0.0.0` is explicitly ignored as a previous version,
+so `bump-minor-pre-major` never gets a chance to run. (Both `bump-minor-pre-major`
+and `bump-patch-for-minor-pre-major` apply only once a release exists and its
+version is below 1.0.0.) The script checks the key is present and warns if not.
 
 The script does not run `git commit`. Review `git status` and commit
 yourself: `git commit -m "chore: bootstrap repository"`.

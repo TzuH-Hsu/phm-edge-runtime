@@ -872,13 +872,23 @@ EOF
     ok "${manifest} rewritten to {\".\": \"0.0.0\"}"
   fi
 
-  cat <<'EOF'
-
-Note: release-as: 0.1.0 stays in release-please-config.json — your first
-release is v0.1.0; remove that key afterwards so subsequent releases
-follow normal Conventional Commit bumps.
-EOF
-  manual "Remove the 'release-as: 0.1.0' key from release-please-config.json after your first release ships"
+  # First-release version. With the manifest at 0.0.0 release-please has no
+  # latestRelease, so bump-minor-pre-major never runs and it falls through to
+  # its hardcoded 1.0.0 -- unless the config carries initial-version. That key
+  # is read only while no release exists, so it needs no cleanup afterwards.
+  # Read-only: the config is a checked-in file the adopter owns, and gh is the
+  # only hard dependency (the --jq flags elsewhere are gh's own), so plain sed.
+  local rp_config='release-please-config.json'
+  local initial_version=""
+  if [ -f "$rp_config" ]; then
+    initial_version="$(sed -n 's/^[[:space:]]*"initial-version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$rp_config" | head -n1)"
+  fi
+  if [ -n "$initial_version" ]; then
+    ok "${rp_config} initial-version is ${initial_version} — first release will be v${initial_version}"
+  else
+    warn "${rp_config} has no initial-version — release-please will number the first release 1.0.0"
+    manual "Add '\"initial-version\": \"0.1.0\"' to release-please-config.json so the first release matches the v0.1.0 milestone"
+  fi
 
   record_phase "8. De-template" "ok"
 }
