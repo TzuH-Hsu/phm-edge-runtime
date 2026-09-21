@@ -22,6 +22,7 @@ Install the lint tools used by `make lint-docs`:
 | markdownlint-cli2 | `npm install -g markdownlint-cli2` |
 | yamllint | `brew install yamllint` (or `pip install yamllint`) |
 | lychee | `brew install lychee` |
+| node (any LTS) | `brew install node` — runs `scripts/*.test.js` in `make check` |
 | actionlint | `brew install actionlint` |
 | gitleaks | `brew install gitleaks` |
 
@@ -49,7 +50,7 @@ skipped level.
 
 - Branch name: `<type>/<issue#>-<slug>`, e.g. `feat/42-label-sync`.
 - Commits follow [Conventional Commits](https://www.conventionalcommits.org/):
-  `feat`, `fix`, `docs`, `chore`, `refactor`, `ci`, `test`, `perf`.
+  using the types listed in `AGENTS.md` (Workflow, step 2).
 - Titles are English, imperative mood: `feat: add label sync phase to bootstrap`.
 - Breaking changes: append `!` after the type (`feat!: ...`) or add a
   `BREAKING CHANGE:` footer.

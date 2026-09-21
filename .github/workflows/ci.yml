@@ -20,6 +20,15 @@ name: CI
 
 on:
   pull_request:
+    # A SUPERSET of the defaults (opened, synchronize, reopened). `edited` and
+    # `ready_for_review` are added so a PR that failed the lint on its body or
+    # title turns green when the author fixes it, without a push — "Re-run
+    # jobs" replays the ORIGINAL payload and would judge the old body.
+    # `labeled` is added because release-please applies `autorelease: pending`
+    # AFTER opening the PR; with a PAT-authored release PR that label is what
+    # exempts it. Never narrow this list: a `types:` without the three
+    # defaults is the "check never created" trap described above.
+    types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
   push:
     branches:
       - main
@@ -43,6 +52,20 @@ jobs:
     #   gh variable set CI_RUNNER_LABELS --body '["ubuntu-slim"]'
     runs-on: ${{ fromJSON(vars.CI_RUNNER_LABELS || '["ubuntu-latest"]') }}
     timeout-minutes: 15
+    # The two extra read scopes exist for the lint step's one API call, and
+    # sit on this job rather than the workflow (github-actions-hygiene rule
+    # 2). On a public repository an issue is readable without them; on a
+    # PRIVATE one `issues.get` returns 403 "Resource not accessible by
+    # integration" under `contents: read` alone — measured, and it fails
+    # every PR. `issues: read` covers an issue number; `pull-requests: read`
+    # is needed as well when the number turns out to be a pull request,
+    # which the lint has to detect to reject it. Both are read-only; fork
+    # PRs get a read-only token anyway. Job-level permissions cannot depend
+    # on the event, so the `push` path carries them too — reads only.
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -67,5 +90,18 @@ jobs:
       - name: Install CI tools
         run: make ci-tools TOOLS="markdownlint-cli2 yamllint actionlint gitleaks lychee"
 
+      # Fails this required check when the head branch is not
+      # <type>/<issue#>-<slug> or the body links no issue — the logic is
+      # scripts/pr-lint.js (ADR-0008), tested by `make check`. Bot PRs are
+      # exempt by author (dependabot[bot], github-actions[bot]) or by
+      # release-please's `autorelease: pending` label — never by branch name.
+      # Step-level `if` so the job still reports on push.
+      - name: Lint the pull request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { run } = require(`${process.env.GITHUB_WORKSPACE}/scripts/pr-lint.js`);
+            await run({ github, context, core });
       - name: Run CI
         run: make ci-pr

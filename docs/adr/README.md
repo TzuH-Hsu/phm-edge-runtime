@@ -26,3 +26,4 @@ Routine choices (a library patch bump, a wording tweak) do not get ADRs. When in
 | [ADR-0002](ADR-0002-release-flow.md) | Release flow: release-please with human-gated release PRs | Accepted |
 | [ADR-0003](ADR-0003-metadata-single-home.md) | Metadata single-home policy | Accepted |
 | [ADR-0007](ADR-0007-retire-agent-labels.md) | Retire the `agent-ok` / `by-agent` label mechanism | Accepted |
+| [ADR-0008](ADR-0008-event-workflow-logic-in-scripts.md) | Event-driven workflow logic lives in `scripts/`, behind a thin `github-script` caller | Accepted |

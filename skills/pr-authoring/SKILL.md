@@ -38,7 +38,7 @@ human reviewer and for an agent reviewing another agent's work.
 
    No level that applies to the change may simply be absent from both the checkbox
    list and the RISK lines.
-5. Use `Closes #N` to link the issue — one issue per PR. Don't bundle unrelated
+5. Use `Closes #N` to link the issue — one issue per PR, and every PR closes one: work that spans several PRs gets a sub-issue per PR, never a `Refs #N` PR that leaves the parent open. CI fails the PR when the body links no issue in this repository, links more than one, or the branch's issue number differs (`scripts/pr-lint.js`). Don't bundle unrelated
    changes just because they happened to be worked on together.
 6. Re-run `make verify` after every revision to the PR, not just before the first
    push. A review comment that changes code invalidates the previous green run.
@@ -46,9 +46,11 @@ human reviewer and for an agent reviewing another agent's work.
 ## How
 
 ```bash
-# Open a PR with a Conventional Commit title, linked issue, template intact
-gh pr create --title "feat: add label sync phase to bootstrap" \
-  --body-file .github/PULL_REQUEST_TEMPLATE.md
+# Open a PR with a Conventional Commit title and the issue number filled in —
+# the template's `Closes #<!-- issue number -->` submitted as-is links nothing,
+# and CI fails the PR on it
+sed 's/Closes #<!-- issue number -->/Closes #42/' .github/PULL_REQUEST_TEMPLATE.md > /tmp/pr-body.md
+gh pr create --title "feat: add label sync phase to bootstrap" --body-file /tmp/pr-body.md
 
 # Re-verify before each push after review feedback
 make verify && git push
@@ -62,6 +64,8 @@ Rollback: revert this PR; no migrations or external state changed
 ```
 
 ## Pitfalls
+
+- Leaving the template's `Closes #<!-- issue number -->` untouched, or an empty `Closes #` — the link is silently absent; CI fails the PR and names the line.
 
 - Leaving a validation level unchecked with no `RISK:` line — indistinguishable from
   "forgot to run it," which is exactly the ambiguity the RISK convention exists to
