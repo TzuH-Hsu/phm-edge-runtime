@@ -45,8 +45,8 @@ Wire a domain-specific L4 target so it fails loud instead of no-op passing:
 
 ```makefile
 verify-l4: ## L4 - hardware-in-loop smoke test (adopter-defined)
-    @command -v hil-runner >/dev/null 2>&1 || { echo "FAIL: hil-runner not installed, cannot verify L4"; exit 1; }
-    hil-runner --suite smoke
+	@command -v hil-runner >/dev/null 2>&1 || { echo "FAIL: hil-runner not installed, cannot verify L4"; exit 1; }
+	hil-runner --suite smoke
 ```
 
 Check blast radius quickly before picking a depth:
@@ -56,12 +56,47 @@ git diff --stat origin/main...HEAD   # which files/dirs changed?
 gh pr view --json files -q '.files[].path'
 ```
 
+A second L4 shape — dependency licence policy. Deliberately **not** a `make`
+target in this template: a repository with no dependency manifest has nothing to
+scan, and a target that greenlights an empty scan is exactly the fake pass rule 7
+forbids. Wire it when your project acquires dependencies, preferring your
+ecosystem's own checker (`pip-licenses`, `go-licenses check`, `cargo-deny`) over
+a generic scanner:
+
+```makefile
+# MANIFESTS: set to whatever your ecosystem actually locks.
+MANIFESTS ?= package-lock.json go.sum requirements.txt Cargo.lock poetry.lock
+SBOM_TMP  ?= .sbom.json
+
+lint-licenses: ## L4 - reject copyleft dependencies (adopter-defined)
+	@command -v syft >/dev/null 2>&1 || { echo "FAIL: syft not installed, cannot verify L4"; exit 1; }
+	@found=""; for m in $(MANIFESTS); do [ -s "$$m" ] && found=1; done; \
+	  [ -n "$$found" ] || { echo "FAIL: none of ($(MANIFESTS)) present - refusing to report a clean scan of nothing"; exit 1; }
+	syft dir:. -o json -q > $(SBOM_TMP)
+	scripts/check-licenses.py < $(SBOM_TMP)
+```
+
+Three things here are load-bearing. The manifest assertion, without which the
+target passes forever on an empty set — and `MANIFESTS` has to list what *your*
+ecosystem locks, or the guard fails honest repositories. Writing the SBOM to a
+file instead of piping it, because a shell pipeline reports only the last
+command's status, so `syft ... | checker` reports success when `syft` itself
+fails (`set -o pipefail` is the alternative, but it is not portable to every
+adopter's `SHELL`). And an SBOM artifact is subject to the same rule as the
+check — an empty one is worse than none, because it looks like evidence.
+
+If you write the checker yourself, two things fail open by default: an SPDX `OR`
+is a *choice*, so `MIT OR GPL-2.0` must pass rather than fail, and `NOASSERTION`
+or an empty licence field must fail loudly, since that is what scanners emit for
+every package they could not resolve.
+
 ## Pitfalls
 
 - Treating `make test` passing as proof a user-visible change works — L1 does not substitute for L3 when the change is UI/CLI-visible.
 - Writing an L4 target that echoes "OK" when the required tool is missing. That is a fake pass; it must fail.
 - Silently skipping L2/L3 because they're inconvenient in the current sandbox — always add the `RISK:` line instead.
 - Running full L0–L3 on a one-line docs fix — over-verification wastes cycles that should go to actually risky changes.
+- Wiring a licence or SBOM scan into `lint` on a repository with no dependency manifest — it scans an empty set and passes forever, which is the fake pass above wearing a compliance badge.
 - Confusing "L4 doesn't exist yet" with "L4 doesn't apply" — if the domain needs it and it's unbuilt, that itself is a `RISK:` line, not silence.
 
 ## Related

@@ -5,6 +5,10 @@
 #
 # area:* labels track this library's own domains.
 #
+# Renaming an area:* label means the three issue forms' Area options too — see
+# skills/labels-and-taxonomy rule 6; scripts/check-label-forms.sh (make check)
+# fails when they disagree, and the labeler reads this file at run time.
+#
 # Format (parsed by scripts/bootstrap.sh's awk-based parser — no yq
 # dependency): flat, unquoted, single-line `- name:` / `color:` /
 # `description:` entries only, in that order. No YAML quoting, no

@@ -17,7 +17,7 @@ A release must never ship from an unverified state, and version/changelog bookke
    2. **A human merges the release PR — never auto-merge.** The branch ruleset requires the `ci` status check to be green before merge is even possible; this is the mitigation for the fact that both CI and release-please trigger on `push:main`, so an unverified commit could otherwise reach the release PR.
    3. Merging the release PR cuts the git tag and GitHub Release automatically.
    4. The maintainer then edits the published release notes to add a short, hand-written TLDR **above** the generated changelog. Release notes have non-technical readers — the generated bullet list alone is not the message.
-2. **Version bump is derived, not chosen.** It comes from Conventional Commit types accumulated since the last release: `fix` → patch, `feat` → minor, any commit with `!` or a `BREAKING CHANGE:` footer → major. This is exactly why commit type discipline matters (see `CONTRIBUTING.md`).
+2. **Version bump is derived, not chosen.** It comes from Conventional Commit types accumulated since the last release: `fix` → patch, `feat` → minor, any commit with `!` or a `BREAKING CHANGE:` footer → major. This is exactly why commit type discipline matters (see `CONTRIBUTING.md`). One exception: a change that adopters must pick up but that genuinely is a hidden type (a new CI gate under `ci`) produces no release on its own; then a `Release-As: X.Y.Z` footer in the PR body cuts one, and X.Y.Z is always the current version plus one patch — if you want more than a patch, the type was wrong. Before the first release there is no current version: that release is numbered by `initial-version` in `release-please-config.json` (see `docs/setup/bootstrap.md`), so a footer there names that version. Use the footer only when nothing is already waiting: the footer overrides release-please's computed version for the whole range since the last tag, so with a release PR already open (an unreleased `feat` or `fix`) a patch footer would under-version that release — merge it first, or leave the footer out and let the hidden-type change ride along. The footer goes on the PR that is the change, not on a follow-up: hidden-type commits are omitted from the generated changelog except the one that carries `Release-As`, which release-please always renders under its type's section, so a footer on a follow-up makes the changelog name the follow-up and omit the change.
 3. **Pre-1.0 semantics**: a minor bump may contain breaking changes. Don't assume `0.x` minor bumps are safe to blindly consume — read the changelog.
 4. **Documented alternative — manual tag-first.** Use this instead of release-please when release cadence is near-zero or the team wants zero release automation:
    1. Decide the version by hand.
@@ -37,11 +37,11 @@ gh issue list --milestone "v0.2.0" --label "priority:p0,priority:p1" --state ope
 # empty output = exit criterion met
 ```
 
-Merge the release-please PR (never squash-merge it manually outside its own flow; let release-please's merge produce the tag):
+Merge the release-please PR yourself, with squash — the only strategy this repo enables (bootstrap phase 5 sets `allow_merge_commit=false` and `allow_rebase_merge=false`). release-please does not merge its own PR; its next run on `push: main` detects the merged release PR and cuts the tag and GitHub Release:
 
 ```bash
 gh pr view --search "head:release-please--branches--main" --json number,statusCheckRollup
-gh pr merge <release-pr#> --merge
+gh pr merge <release-pr#> --squash
 ```
 
 Add the human TLDR after the release is cut:
@@ -64,12 +64,25 @@ gh release edit v0.2.0 --notes "TLDR: ...\n\n$(gh release view v0.2.0 --json bod
 
 ## Pitfalls
 
+- Shipping a release-worthy change under a hidden type (`ci`, `chore`, `docs`, `refactor`, `test`) and waiting for a release PR that never comes — release-please logs `No user facing commits found … skipping`. Usually the type was wrong (`feat`/`fix`); when it was right, the `Release-As` exception in rule 2 applies.
+
+- Publishing or delivering a repository whose `LICENSE` still names the upstream template author — `head -3 LICENSE` before anything leaves the building. For client work an inherited MIT grants the client, and everyone else, far more than the commission contract does, and it cannot be withdrawn (`docs/setup/licensing.md`).
 - Enabling auto-merge on the release-please PR "to save a click" — this defeats the entire point of the human gate described in ADR-0002; the `push:main` race is only closed because a human reviews before merge.
 - Shipping release notes with only the generated Conventional Commit list and no TLDR — accurate for engineers, meaningless for the actual audience of a release announcement.
 - Running both release-please and the manual tag-first flow at once — pick one per repo; running both produces duplicate or conflicting tags.
 - Treating a `0.x` minor bump as automatically non-breaking because "it's not a major" — pre-1.0, minor can break; read the changelog before upgrading dependents.
 - Opening a milestone with no stated exit criteria, then improvising "is this done?" at cut time — define it up front so the decision is a lookup, not a debate.
-- CI on the release PR may sit un-run (`action_required` / no checks) because workflows don't auto-trigger on PRs created with the default `GITHUB_TOKEN` (GitHub's recursion guard); nudge it by closing and reopening the release PR, or configure release-please with a Personal Access Token (PAT) that has workflow trigger permission.
+- The release PR shows no checks and cannot merge. The `ci` run exists but is parked with conclusion `action_required` — GitHub holds workflow runs on PRs opened with the default `GITHUB_TOKEN` (its recursion guard) until someone approves them. Approve the parked run; closing and reopening the PR does not release it:
+
+  ```bash
+  sha=$(gh pr view <release-pr#> --json headRefOid --jq .headRefOid)
+  id=$(gh run list --workflow ci.yml --commit "$sha" --status action_required --json databaseId --jq '.[0].databaseId')
+  gh api -X POST "repos/<owner>/<repo>/actions/runs/$id/approve"
+  ```
+
+  Select by commit, workflow and status rather than by branch name — on a public repository a fork PR can share the predictable `release-please--branches--main` branch name, and approving *its* run would leave the release PR still parked.
+
+  The alternative is to run release-please with a Personal Access Token that can trigger workflows, at the cost of managing that token. Do not push an empty commit to the release branch to wake CI — it lands in the release commit's history for nothing.
 
 ## Related
 

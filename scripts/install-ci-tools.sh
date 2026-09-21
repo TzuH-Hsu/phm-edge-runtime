@@ -50,8 +50,11 @@ MARKDOWNLINT_CLI2_VERSION="0.23.2"
 YAMLLINT_VERSION="1.38.0"
 
 # --- preflight --------------------------------------------------------------
-# The three tarball tools ship linux x86_64 assets only, which is correct for
-# the ubuntu-latest hosted runners this repo uses. On any other architecture the
+# The three tarball tools ship linux x86_64 assets only, which is correct for the
+# default ubuntu-latest runner. This is what bounds the *_RUNNER_LABELS repository
+# variables (docs/setup/runners.md) to a linux x86_64 runner: point it at macOS or
+# arm64 and the failure surfaces here, as a uname message, not as a config error.
+# On any other architecture the
 # download would succeed and then fail at exec time with a confusing "exec
 # format error", so fail loudly and early instead. Supporting arm64 means adding
 # per-tool asset names here, not relaxing this check.

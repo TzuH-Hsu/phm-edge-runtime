@@ -6,7 +6,7 @@ Every issue/PR attribute lives in **exactly one place**. Never dual-write the sa
 
 | Attribute | Home | Values / format |
 | --- | --- | --- |
-| Type (coarse) | `type:bug` / `type:feature` **labels** | Personal accounts have no native issue types, so labels are Type's home; neither label present means Task |
+| Type (coarse) | `type:bug` / `type:feature` **labels** | Native issue types cannot be applied on a personal account, so labels are Type's home; neither label present means Task |
 | Type (subtype) | `type:*` **labels** | `chore` / `ops` / `docs` / `security` — Task subtypes only |
 | Priority | `priority:*` **labels** | `p0` critical / `p1` milestone-blocking / `p2` important / `p3` polish |
 | Area | `area:*` **labels** | This library's own domains — see `.github/labels.yml` |
@@ -19,7 +19,13 @@ Every issue/PR attribute lives in **exactly one place**. Never dual-write the sa
 
 ## Personal accounts
 
-This repository lives under a personal account, so **native issue types are unavailable** (`repos/{repo}/issue-types` returns 404). Coarse Type is carried by the `type:bug` / `type:feature` labels instead; neither label present means Task. This is still single-home — labels are the *only* home for Type here, never alongside a native type.
+This repository lives under a personal account, so **native issue types cannot be applied** (REST `repos/{owner}/{repo}/issue-types` lists Bug/Feature/Task, but no issue can carry one; GraphQL `repository.issueTypes` returning `null` is the reliable check, below). Coarse Type is carried by the `type:bug` / `type:feature` labels instead; neither label present means Task. This is still single-home — labels are the *only* home for Type here, never alongside a native type.
+
+```bash
+gh api graphql -f query='query($o:String!,$n:String!){ repository(owner:$o,name:$n){ issueTypes(first:20){ nodes{ name } } } }' -F o='{owner}' -F n='{repo}' --jq '.data.repository.issueTypes'
+```
+
+`null` is this case (verified 2026-09-15). `type:bug` / `type:feature` are applied by hand only; neither the labeler nor `scripts/check-label-forms.sh` touches them, and the check refuses them in the task form's Subtype dropdown.
 
 The issue form you pick still matters (it decides the body template); GitHub simply ignores its `type:` key. Add `type:bug` or `type:feature` after the issue is created.
 
