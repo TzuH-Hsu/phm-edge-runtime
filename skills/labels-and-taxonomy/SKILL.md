@@ -23,8 +23,9 @@ Labels are cheap to create and expensive to keep meaningful — every unused or 
 3. **Label budget**: this template ships 14 labels. A healthy small repo stays under roughly 25. Label-count creep is the single most common taxonomy failure — it happens one "just this once" label at a time, never as one bad decision.
 4. **Add a label only if you will filter or automate on it.** If you can't name the `gh issue list --label` query or the workflow condition that would use it, it's documentation dressed up as taxonomy — write a sentence in the issue instead.
 5. **Retiring a label is three steps, not one**: remove it from `.github/labels.yml`, delete it on GitHub (via the next `scripts/bootstrap.sh` sync or `gh label delete`), and note the removal in the PR description so the history is discoverable later.
-6. **`area:*` labels are the intended adopter customization point.** The starter set (`area:docs`, `area:skills`, `area:ci`, `area:governance`) exists to be renamed to the adopter's real domains — keep the `area:` prefix so tooling and queries keep working, but the values are meant to change.
-7. **Never encode workflow status in a label.** `Backlog`/`Ready`/`In Progress`/`In Review`/`Blocked`/`Done` belongs to the Project `Status` field — that's a single field with defined transitions; N status labels would be N independently-driftable booleans on the same fact.
+6. **`area:*` labels are the intended adopter customization point.** The starter set (`area:docs`, `area:skills`, `area:ci`, `area:governance`) exists to be renamed to the adopter's real domains — keep the `area:` prefix so tooling and queries keep working, but the values are meant to change. A rename is two edits, not one: `labels.yml`, and the Area options in each issue form under `.github/ISSUE_TEMPLATE/`. `make check` (`scripts/check-label-forms.sh`) fails until the forms match and prints the names it expects; the labeler workflow reads `labels.yml` at run time and needs nothing.
+7. **Environment-conditional labels ship commented out, never active.** A label that is correct on one account type and a contract violation on another cannot ship enabled — and "delete it on GitHub" is not a fix, because the next `scripts/bootstrap.sh` sync recreates anything `labels.yml` still declares. Ship it commented, with the reasoning inline, so activating it is a deliberate edit by the adopter who actually wants it. The coarse-Type fallback (`type:bug` / `type:feature`) is the worked example.
+8. **Never encode workflow status in a label.** `Backlog`/`Ready`/`In Progress`/`In Review`/`Blocked`/`Done` belongs to the Project `Status` field — that's a single field with defined transitions; N status labels would be N independently-driftable booleans on the same fact.
 
 ## How
 
@@ -70,6 +71,7 @@ grep -i "<the attribute you're about to label>" .github/PROJECT_FIELDS.md
 - A second `priority` or `type` field appearing on the Project board that mirrors the labels — this is the exact ADR-0003 violation the contract file exists to catch in review.
 - Letting `area:*` sprawl past a handful of values — if every PR needs a new `area:*` label, the domains are sliced too fine; consolidate.
 - Deleting a label from GitHub without removing it from `.github/labels.yml` first — the next bootstrap run silently recreates it.
+- Uncommenting the coarse-Type fallback on an organization repo — native issue types are already the home for coarse Type there, so this is the dual-write ADR-0003 forbids. Upstream's bootstrap phase 2 flags it (this repository's older phase 2 does not).
 
 ## Related
 

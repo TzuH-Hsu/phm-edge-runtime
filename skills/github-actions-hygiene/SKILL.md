@@ -12,7 +12,7 @@ Workflows are the highest-privilege, least-reviewed code in most repositories �
 
 ## Rules
 
-1. **Workflows call `make` targets; they never contain logic.** All branching, tool installation flags, and conditionals belong in the `Makefile`. A workflow step should read as `run: make lint`, not a shell script with real decisions in it. Adopters customize the Makefile — never the workflow YAML — to change what runs.
+1. **Workflows call `make` targets; they never contain logic.** All branching, tool installation flags, and conditionals belong in the `Makefile`. A workflow step should read as `run: make lint`, not a shell script with real decisions in it. Adopters customize the Makefile — never the workflow YAML — to change what runs. Two things the Makefile cannot own: `runs-on`, which GitHub resolves before any make target exists — expose it as a repository variable (one per workflow here: `CI_RUNNER_LABELS` (ci.yml), `AUTOMATION_RUNNER_LABELS` (issue-labeler.yml), `MAINTENANCE_RUNNER_LABELS` (maintenance.yml), `RELEASE_RUNNER_LABELS` (release-please.yml)) so *where* a job runs stays configurable without forking the file; and event handlers that need the token or the event payload (the issue labeler, the PR lint) — their logic lives in `scripts/*.js`, tested by `make check`, and the workflow step is a two-line `actions/github-script` caller after a pinned checkout (ADR-0008). Neither shape puts adopter values in the YAML.
 2. **Least privilege by default.** Set `permissions: contents: read` at the workflow (top) level; escalate only inside the specific job that needs more, and only to the exact scope needed (e.g. `pull-requests: write` on a labeler job, not on the whole workflow).
 3. **Pin every third-party action to a full commit SHA**, with the human-readable version as a trailing comment — never a floating tag like `@v4`:
 
@@ -84,7 +84,8 @@ verify_checksum() {
 ## Related
 
 - `` `.github/workflows/ci.yml` `` — reference implementation of pinned actions, top-level `permissions: read`, concurrency group, `timeout-minutes`, and `persist-credentials: false`; also carries the header warning explaining why its `on:` block must never gain a path filter (the `ci` job is the only required status check)
-- `Makefile` — where all workflow logic actually lives (`lint`, `test`, `verify`, `ci-pr`, `ci-tools`)
+- `Makefile` — where workflow logic lives (`lint`, `test`, `verify`, `ci-pr`, `ci-tools`), except the event handlers in `scripts/issue-labeler.js` and `scripts/pr-lint.js` (rule 1, ADR-0008)
+- `` `scripts/issue-labeler.js` ``, `` `scripts/pr-lint.js` `` / `` `scripts/check-node-tests.sh` `` — the event handlers and the `make check` step that tests them
 - `` `scripts/install-ci-tools.sh` `` — checksum-verified tool installs and the single home for all five CI tool version pins, shared by `ci.yml` and `maintenance.yml`
 - `` `scripts/check-tool-versions.sh` `` — rule 10's watcher: diffs those pins against upstream weekly and fails on drift
 - `AGENTS.md` — "The Makefile is the only executable contract in this repository"

@@ -662,19 +662,47 @@ phase_project() {
 phase_repo_settings() {
   doing "Phase 5: repo settings"
 
-  # rebase stays on: release-please merges its own PR via normal PR merge;
-  # squash is the human default per AGENTS.md; wiki off = docs live in-repo.
+  # Squash is the ONLY merge strategy. AGENTS.md ("squash merge; the PR title
+  # becomes the commit message on main"), CONTRIBUTING.md, pr-authoring and
+  # branch-and-commit all declare it; these settings make the buttons match the
+  # docs. Rebase is off because nothing needs it: the release PR is merged by a
+  # human like any other PR (ADR-0002 -- never auto-merge), not by
+  # release-please, and release-please recommends squash-merge for the linear
+  # history it parses.
+  #
+  # squash_merge_commit_title=PR_TITLE: GitHub's default is COMMIT_OR_PR_TITLE,
+  # which silently uses the branch commit's subject whenever a PR has exactly
+  # one commit -- making the documented claim above untrue for most PRs.
+  #
+  # squash_merge_commit_message=PR_BODY: GitHub's default concatenates every
+  # branch commit message into the main commit body, and release-please
+  # deliberately parses that body for additional Conventional Commits and
+  # BREAKING-CHANGE footers. A WIP `feat:`/`fix:` commit on a branch would
+  # become a phantom changelog entry or an unintended version bump. Not
+  # hypothetical: `chore: release 0.2.0 (#7)` on this repo's main carries
+  # `* chore: trigger CI on release PR` in its body -- harmless only because
+  # `chore` is release-please's hidden bucket.
+  #
+  # allow_update_branch=true: the ruleset sets
+  # strict_required_status_checks_policy=false, so the "Update branch" button is
+  # not offered at all without this. Its merge commits are squashed away.
+  #
+  # wiki off = docs live in-repo.
   run_or_dry gh api -X PATCH "repos/${REPO}" \
     -F allow_squash_merge=true \
     -F allow_merge_commit=false \
-    -F allow_rebase_merge=true \
+    -F allow_rebase_merge=false \
+    -f squash_merge_commit_title=PR_TITLE \
+    -f squash_merge_commit_message=PR_BODY \
+    -F allow_update_branch=true \
     -F delete_branch_on_merge=true \
     -F has_issues=true \
     -F has_wiki=false \
     || { fail "gh api repo settings PATCH failed"; record_phase "5. Repo settings" "fail"; return 1; }
 
-  ok "merge strategy: squash + rebase allowed, merge commits disabled"
-  ok "delete_branch_on_merge=true, has_issues=true, has_wiki=false"
+  ok "merge strategy: squash only (merge commits and rebase disabled)"
+  ok "squash commit message: PR title + PR body"
+  ok "delete_branch_on_merge=true, allow_update_branch=true, has_issues=true, has_wiki=false"
 
   record_phase "5. Repo settings" "ok"
 }

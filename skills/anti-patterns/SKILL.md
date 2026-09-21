@@ -34,6 +34,7 @@ Each entry: symptom → why it happens → the fix (this repo's mechanism).
 | Silent validation skip | "tests didn't apply" said nowhere | Skipping is quiet; declaring feels like admitting fault | `RISK:` line convention — every skipped level is stated (`validation-ladder`) |
 | Deadline refactor cramming | Big refactor jammed into a release under pressure | "While we're in here" scope-creep near a cut | Refactors get their own milestone; timebox kills scope, not the deadline (`milestone-planning`) |
 | Agent over-trust | Merging agent PRs on the agent's own success claim | Green-looking summary reads like proof | Commit trailers + claims-are-claims review + cross-family review (`agent-workflow`) |
+| Inherited-licence leak | The delivered repo's `LICENSE` still names the template author | Templates ship a licence; setup scripts rewrite docs and never touch it | Upstream bootstrap phase 9 forces an explicit choice and moves attribution to `NOTICE`; this repository chose Apache-2.0 and has carried the template attribution in `NOTICE` since bootstrap (2026-09-02) |
 
 Reading an entry in the wild:
 
@@ -70,6 +71,7 @@ template ships opinionated defaults instead of leaving them to taste.
 - `` `.github/PROJECT_FIELDS.md` `` — the single-home authority map
 - `` `docs/adr/ADR-0003-metadata-single-home.md` `` — dual-home rationale
 - `` `skills/labels-and-taxonomy/SKILL.md` `` — label budget and retire ritual
+- `` `docs/setup/licensing.md` `` — the inherited-licence failure in full, and the three answers bootstrap offers
 - `` `skills/github-actions-hygiene/SKILL.md` `` — workflow-count budget
 - `` `skills/docs-hygiene/SKILL.md` `` — documentation-drift prevention
 - `` `skills/validation-ladder/SKILL.md` `` — the `RISK:` convention
