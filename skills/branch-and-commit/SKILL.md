@@ -25,11 +25,20 @@ code that closes it. Getting the format right keeps `git log`, the changelog, an
    | `feat` | New capability | Minor bump, "Features" section |
    | `fix` | Bug fix | Patch bump, "Bug Fixes" section |
    | `perf` | Performance improvement | Patch bump |
-   | `refactor` | Restructure, no behavior change | Patch bump |
+   | `refactor` | Restructure, no behavior change | No version bump |
    | `docs` | Documentation only | No version bump |
    | `chore` | Maintenance, tooling | No version bump |
    | `ci` | CI/CD workflow changes | No version bump |
    | `test` | Test-only changes | No version bump |
+
+   "No version bump" means release-please does not open a release PR for it at
+   all — it is a hidden type, and hidden-type commits are left out of the
+   changelog as well (one exception, below). So first ask whether the type is
+   right: a change users will notice is usually a `feat` or a `fix`, not a hidden
+   type. When the type is genuinely right and a tag is still needed anyway, a
+   `Release-As` footer in the PR body can cut one; the recipe, its limits and the
+   changelog exception live in `skills/release-management` rule 2 and are not
+   repeated here.
 
 4. Breaking changes append `!` after the type (`feat!:`) or add a `BREAKING CHANGE:`
    footer — either triggers a major bump. Use whichever is more visible for the
@@ -60,6 +69,8 @@ git branch --show-current  # expect <type>/<issue#>-<slug>
 ```
 
 ## Pitfalls
+
+- A branch with the issue slot empty (`chore/-slug`) — the convention degrades silently; CI fails the PR on it (`scripts/pr-lint.js`).
 
 - Typing `fix:` for what is actually a `feat:` (or vice versa) — this silently
   miscategorizes the changelog entry; release-please trusts the type literally.
