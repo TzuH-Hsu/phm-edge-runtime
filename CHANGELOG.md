@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.1.1...v0.2.0) (2026-09-21)
+
+
+### Features
+
+* adopt the template's CI self-checks (labeler v2, form check, PR lint) ([#15](https://github.com/TzuH-Hsu/phm-edge-runtime/issues/15)) ([e11c364](https://github.com/TzuH-Hsu/phm-edge-runtime/commit/e11c3643d68a7e1f19a3edba6a8beed6e5e31333))
+
 ## [0.1.1](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.1.0...v0.1.1) (2026-09-15)
 
 
