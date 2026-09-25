@@ -10,9 +10,10 @@ downstream to every user of the library.
 Fails closed: a component with no licence, NOASSERTION, a LicenseRef-* or any
 identifier not on the allowlist is rejected. SPDX expressions are evaluated,
 so `MIT OR GPL-2.0-only` passes (MIT can be chosen) while `MIT AND GPL-2.0-only`
-does not. `X WITH <exception>` is judged on X, provided the exception is a
-well-formed SPDX exception id (a LicenseRef-/AdditionRef- or operator there
-fails the component).
+does not. `X WITH <exception>` is judged on X only when the exception is on
+APPROVED_EXCEPTIONS; any other exception fails the component, since a custom
+addition can change the terms. A licence id may carry one trailing `+`
+("or later"); anything else that is not a plain SPDX id fails.
 
 An empty SBOM passes only when the repository has no dependency manifest; if a
 manifest exists and syft found nothing, the scan is treated as broken. A git
@@ -24,16 +25,31 @@ import os
 import re
 import sys
 
-ALLOWED = re.compile(r"^(MIT|MIT-0|Apache-2\.0|0BSD|BSD-[0-9A-Za-z.-]+|ISC)$")
+ALLOWED = {
+    "MIT", "MIT-0", "Apache-2.0", "ISC",
+    "0BSD", "BSD-1-Clause", "BSD-2-Clause", "BSD-3-Clause",
+}
+APPROVED_EXCEPTIONS = {"LLVM-exception"}
+LICENCE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]*\+?$")
 
 MANIFESTS = {
-    "package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock",
-    "requirements.txt", "pyproject.toml", "poetry.lock", "uv.lock", "Pipfile.lock",
-    "go.mod", "Cargo.toml", "Cargo.lock", "pom.xml", "build.gradle",
-    "build.gradle.kts", "Gemfile.lock", "composer.lock",
+    # JavaScript
+    "package.json", "package-lock.json", "npm-shrinkwrap.json", "pnpm-lock.yaml",
+    "yarn.lock", "bun.lockb",
+    # Python
+    "requirements.txt", "pyproject.toml", "setup.py", "setup.cfg", "Pipfile",
+    "Pipfile.lock", "poetry.lock", "uv.lock", "pdm.lock", "environment.yml",
+    # Go, Rust, JVM
+    "go.mod", "go.sum", "Cargo.toml", "Cargo.lock", "pom.xml", "build.gradle",
+    "build.gradle.kts", "gradle.lockfile", "build.sbt",
+    # Ruby, PHP, .NET, Swift, Dart, Elixir, C/C++
+    "Gemfile", "Gemfile.lock", "composer.json", "composer.lock",
+    "packages.config", "packages.lock.json", "Package.swift", "Package.resolved",
+    "Podfile", "Podfile.lock", "pubspec.yaml", "pubspec.lock", "mix.exs",
+    "mix.lock", "conanfile.txt", "conanfile.py", "vcpkg.json",
 }
+MANIFEST_PATTERNS = re.compile(r"^requirements[-_.].*\.txt$|\.(csproj|fsproj|vbproj|gemspec|cabal)$")
 SKIP_DIRS = {".git", "node_modules", "dist", ".venv", "venv"}
-EXCEPTION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.+-]*$")
 
 
 class Unparseable(ValueError):
@@ -65,16 +81,16 @@ def parse(tokens):
         elif tok.upper() in ("AND", "OR", "WITH", ")"):
             raise Unparseable("unexpected " + tok)
         else:
-            node = ("id", tok.rstrip("+"))
+            if not LICENCE_ID.match(tok):
+                raise Unparseable("bad licence id " + tok)
+            node = ("id", tok[:-1] if tok.endswith("+") else tok)
         if peek() == "WITH":
             if pos + 1 >= len(tokens):
                 raise Unparseable("WITH without exception")
             exc = tokens[pos + 1]
-            if (not EXCEPTION_ID.match(exc)
-                    or exc.upper() in ("AND", "OR", "WITH")
-                    or re.match(r"(?i)(LicenseRef|AdditionRef|DocumentRef)-", exc)):
-                raise Unparseable("bad exception " + exc)
-            pos += 2  # a standard exception only adds permissions to the licence
+            if exc not in APPROVED_EXCEPTIONS:
+                raise Unparseable("unapproved exception " + exc)
+            pos += 2  # an approved exception only adds permissions to the licence
         return node
 
     def and_expr():
@@ -102,7 +118,7 @@ def parse(tokens):
 def allowed(node):
     kind, value = node
     if kind == "id":
-        return bool(ALLOWED.match(value))
+        return value in ALLOWED
     if kind == "and":
         return all(allowed(n) for n in value)
     return any(allowed(n) for n in value)
@@ -121,7 +137,8 @@ def find_manifests(root="."):
     found = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
-        found.extend(os.path.join(dirpath, f) for f in filenames if f in MANIFESTS)
+        found.extend(os.path.join(dirpath, f) for f in filenames
+                     if f in MANIFESTS or MANIFEST_PATTERNS.search(f))
     return found
 
 
