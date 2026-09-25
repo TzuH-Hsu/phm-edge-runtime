@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.1...v0.2.2) (2026-09-25)
+
+
+### Bug Fixes
+
+* enforce the licence allowlist instead of a copyleft denylist ([#23](https://github.com/TzuH-Hsu/phm-edge-runtime/issues/23)) ([78561ac](https://github.com/TzuH-Hsu/phm-edge-runtime/commit/78561ac013c7e060f5201db03b9048bcd0809e52))
+
 ## [0.2.1](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.0...v0.2.1) (2026-09-25)
 
 
