@@ -76,13 +76,15 @@ maintenance: ## Everything the weekly maintenance workflow runs (network; not in
 # Not wired into `lint`/`ci-pr` yet: there are no dependencies to scan, and syft
 # is not in the pinned CI tool list. Wire both in (scripts/install-ci-tools.sh +
 # the `lint` aggregate) with the first real dependency.
+# Both targets exclude .github/: syft catalogues the workflows' GitHub Actions,
+# which are CI tooling, not delivered with the product, and carry no licence data.
 
 lint-licenses: ## Reject copyleft dependencies (GPL/AGPL/LGPL/SSPL/...)
 	@command -v syft >/dev/null 2>&1 || { echo "install: brew install syft"; exit 1; }
-	set -o pipefail; syft dir:. -o json -q | python3 scripts/check-licenses.py
+	set -o pipefail; syft dir:. -o json -q --exclude './.github/**' | python3 scripts/check-licenses.py
 
 sbom: ## Write SPDX SBOM + readable third-party licence list to dist/
 	@command -v syft >/dev/null 2>&1 || { echo "install: brew install syft"; exit 1; }
 	@mkdir -p dist
-	syft dir:. -q -o spdx-json=dist/sbom.spdx.json -o table=dist/third-party-licences.txt
+	syft dir:. -q --exclude './.github/**' -o spdx-json=dist/sbom.spdx.json -o table=dist/third-party-licences.txt
 	@echo "wrote dist/sbom.spdx.json and dist/third-party-licences.txt"
