@@ -24,6 +24,7 @@ submodules are searched for their own .gitmodules, to any depth.
 import json
 import os
 import re
+import subprocess
 import sys
 
 ALLOWED = {
@@ -145,12 +146,28 @@ def find_manifests(root="."):
     return found
 
 
+def declared_submodule_paths(gitmodules):
+    """Submodule paths from a .gitmodules file, decoded by git's own config
+    parser so quoted or escaped values (`path = "hash#dir"`) come out right."""
+    result = subprocess.run(
+        ["git", "config", "-z", "-f", gitmodules, "--get-regexp", r"^submodule\..*\.path$"],
+        capture_output=True, text=True,
+    )
+    if result.returncode == 1 and not result.stdout:
+        return []  # no path entries
+    if result.returncode != 0:
+        raise RuntimeError("cannot parse {}: {}".format(gitmodules, result.stderr.strip()))
+    return [entry.split("\n", 1)[1] for entry in result.stdout.split("\0") if "\n" in entry]
+
+
 def uninitialised_submodules(root="."):
     path = os.path.join(root, ".gitmodules")
     if not os.path.isfile(path):
         return []
-    with open(path) as handle:
-        declared = re.findall(r"^\s*path\s*=\s*(.+?)\s*$", handle.read(), re.MULTILINE)
+    try:
+        declared = declared_submodule_paths(path)
+    except (OSError, RuntimeError) as err:
+        return ["{} ({})".format(path, err)]
     missing = []
     for rel in declared:
         sub = os.path.normpath(os.path.join(root, rel))
