@@ -14,9 +14,10 @@ name: CI
 # satisfies the required check, letting unverified code merge past the gate.
 # Neither mechanism belongs on this job.
 #
-# There is no minutes argument for either. The job runs in ~15s and bills as one
-# rounded-up minute whether it does work or not, and this is a public repo where
-# hosted runners are free. Skipping saves nothing and risks everything.
+# There is no minutes argument for either. The job runs in ~15s: on a public
+# repository hosted runners are free, and on a private one it bills a single
+# rounded-up minute whether it does work or not (docs/setup/runners.md).
+# Skipping saves at most that minute and risks everything.
 
 on:
   pull_request:
@@ -77,19 +78,6 @@ jobs:
           # to every later step (and to any tool binary they install).
           persist-credentials: false
 
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: lts/*
-
-      # Every tool version pin, plus the checksum verification, lives in
-      # scripts/install-ci-tools.sh (shared with maintenance.yml) so that
-      # `make check-tool-versions` has a single place to diff against upstream.
-      # This was three separate steps, one of them ~40 lines of shell duplicated
-      # verbatim in maintenance.yml.
-      - name: Install CI tools
-        run: make ci-tools TOOLS="markdownlint-cli2 yamllint actionlint gitleaks lychee"
-
       # Fails this required check when the head branch is not
       # <type>/<issue#>-<slug> or the body links no issue — the logic is
       # scripts/pr-lint.js (ADR-0008), tested by `make check`. Bot PRs are
@@ -103,5 +91,19 @@ jobs:
           script: |
             const { run } = require(`${process.env.GITHUB_WORKSPACE}/scripts/pr-lint.js`);
             await run({ github, context, core });
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: lts/*
+
+      # Every tool version pin, plus the checksum verification, lives in
+      # scripts/install-ci-tools.sh (shared with maintenance.yml) so that
+      # `make check-tool-versions` has a single place to diff against upstream.
+      # This was three separate steps, one of them ~40 lines of shell duplicated
+      # verbatim in maintenance.yml.
+      - name: Install CI tools
+        run: make ci-tools TOOLS="markdownlint-cli2 yamllint actionlint gitleaks lychee"
+
       - name: Run CI
         run: make ci-pr

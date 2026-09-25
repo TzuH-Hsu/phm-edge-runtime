@@ -22,8 +22,10 @@ safe to hand to an AI agent without a live conversation.
 2. Never hand-add a label the form already captures. Priority (`priority:*`) and area
    (`area:*`) come from the form's own fields — duplicating them manually creates a
    second, driftable copy of the same fact. It also does not stick: the labeler owns
-   those families and removes any `priority:*` / `area:*` it cannot derive from the
-   body's `### Priority` / `### Area` sections on the next edit.
+   each family whose heading is in the body and removes any `priority:*` / `area:*`
+   it cannot derive from that `### Priority` / `### Area` section on the next edit
+   (a body without those headings is not form-managed and is left alone — see the
+   last pitfall).
 3. Respect the single-home contract in `.github/PROJECT_FIELDS.md` for every other
    attribute too: status lives on the Project board, version on the milestone,
    dependencies and epics as native relationships. Don't invent a label or field that
@@ -52,7 +54,7 @@ gh issue view 42 --repo <owner>/<repo> --json title,labels,milestone,body
 
 `gh issue create --title … --body …` skips the form entirely: no native type, and a
 body with none of the form's sections, so the labeler has nothing to sync and the
-issue ends up with no labels at all. Compose the body the way the form would have
+issue ends up with no labels beyond any passed with `--label`. Compose the body the way the form would have
 rendered it — a `### <Field label>` heading per field, the option text exactly as
 the form lists it — and the labeler applies `priority:*` / `area:*` / `type:*` on
 the `opened` event:
@@ -107,8 +109,11 @@ reviewer nothing to check against — rewrite before handing the issue to anyone
 - Opening a blank issue to "save time" — it skips native type assignment and the
   priority/area fields entirely, pushing the cleanup onto triage later.
 - An agent opening issues with `--body` prose and no `### Priority` / `### Area`
-  sections — every such issue is label-less, and adding the labels by hand only lasts
-  until the next edit. Use the form-shaped body above.
+  sections — every such issue is label-less unless `--label` supplied some, which
+  then behave like any hand-applied label. Labels added by hand do survive
+  edits (the labeler only syncs a family whose heading is in the body), but the
+  labels then live nowhere the form or the labeler can see, so the next
+  form-shaped edit of that body silently takes over. Use the form-shaped body above.
 
 ## Related
 
