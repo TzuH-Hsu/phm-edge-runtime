@@ -10,10 +10,14 @@ downstream to every user of the library.
 Fails closed: a component with no licence, NOASSERTION, a LicenseRef-* or any
 identifier not on the allowlist is rejected. SPDX expressions are evaluated,
 so `MIT OR GPL-2.0-only` passes (MIT can be chosen) while `MIT AND GPL-2.0-only`
-does not. `X WITH <exception>` is judged on X.
+does not. `X WITH <exception>` is judged on X, provided the exception is a
+well-formed SPDX exception id (a LicenseRef-/AdditionRef- or operator there
+fails the component).
 
 An empty SBOM passes only when the repository has no dependency manifest; if a
-manifest exists and syft found nothing, the scan is treated as broken.
+manifest exists and syft found nothing, the scan is treated as broken. A git
+submodule declared in .gitmodules whose directory is missing or empty also
+fails the check: its components cannot have been scanned.
 """
 import json
 import os
@@ -29,6 +33,7 @@ MANIFESTS = {
     "build.gradle.kts", "Gemfile.lock", "composer.lock",
 }
 SKIP_DIRS = {".git", "node_modules", "dist", ".venv", "venv"}
+EXCEPTION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.+-]*$")
 
 
 class Unparseable(ValueError):
@@ -64,7 +69,12 @@ def parse(tokens):
         if peek() == "WITH":
             if pos + 1 >= len(tokens):
                 raise Unparseable("WITH without exception")
-            pos += 2  # the exception does not change which licence applies
+            exc = tokens[pos + 1]
+            if (not EXCEPTION_ID.match(exc)
+                    or exc.upper() in ("AND", "OR", "WITH")
+                    or re.match(r"(?i)(LicenseRef|AdditionRef|DocumentRef)-", exc)):
+                raise Unparseable("bad exception " + exc)
+            pos += 2  # a standard exception only adds permissions to the licence
         return node
 
     def and_expr():
@@ -115,12 +125,29 @@ def find_manifests(root="."):
     return found
 
 
+def uninitialised_submodules(root="."):
+    path = os.path.join(root, ".gitmodules")
+    if not os.path.isfile(path):
+        return []
+    with open(path) as handle:
+        declared = re.findall(r"^\s*path\s*=\s*(.+?)\s*$", handle.read(), re.MULTILINE)
+    return [d for d in declared
+            if not os.path.isdir(os.path.join(root, d)) or not os.listdir(os.path.join(root, d))]
+
+
 def main() -> int:
     raw = sys.stdin.read().strip()
     if not raw:
         print("check-licenses: empty SBOM on stdin", file=sys.stderr)
         return 2
     artifacts = json.loads(raw).get("artifacts", [])
+    missing = uninitialised_submodules()
+    if missing:
+        print("check-licenses: submodules not checked out, their licences were not scanned:")
+        for path in sorted(missing):
+            print("  " + path)
+        print("run `git submodule update --init --recursive` first")
+        return 1
     if not artifacts:
         manifests = find_manifests()
         if manifests:
