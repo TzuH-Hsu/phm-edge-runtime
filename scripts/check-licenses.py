@@ -17,9 +17,10 @@ addition can change the terms. A licence id may carry one trailing `+`
 
 An empty SBOM passes only when the repository has no dependency manifest; if a
 manifest exists and syft found nothing, the scan is treated as broken. A git
-submodule declared in .gitmodules that is not checked out (no `.git` file or
-directory at its path, whatever else the directory holds) also fails the check:
-its components cannot have been scanned. Checked-out submodules are searched
+submodule declared in .gitmodules that is not a working git checkout (git must
+resolve the submodule directory as its own work-tree top level; stale files or
+a dangling `.git` do not count) also fails the check: its components cannot
+have been scanned. Checked-out submodules are searched
 for their own .gitmodules, to any depth.
 """
 import json
@@ -161,6 +162,19 @@ def declared_submodule_paths(gitmodules):
     return [entry.split("\n", 1)[1] for entry in result.stdout.split("\0") if "\n" in entry]
 
 
+def is_checked_out(path):
+    """True when git resolves `path` as the top level of a usable work tree."""
+    if not os.path.exists(os.path.join(path, ".git")):
+        return False
+    result = subprocess.run(
+        ["git", "-C", path, "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return False
+    return os.path.realpath(result.stdout.strip()) == os.path.realpath(path)
+
+
 def uninitialised_submodules(root="."):
     path = os.path.join(root, ".gitmodules")
     if not os.path.isfile(path):
@@ -172,7 +186,7 @@ def uninitialised_submodules(root="."):
     missing = []
     for rel in declared:
         sub = os.path.normpath(os.path.join(root, rel))
-        if not os.path.exists(os.path.join(sub, ".git")):
+        if not is_checked_out(sub):
             missing.append(sub)
         else:
             missing.extend(uninitialised_submodules(sub))
