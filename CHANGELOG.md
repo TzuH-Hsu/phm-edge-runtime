@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.2...v0.2.3) (2026-09-25)
+
+
+### Bug Fixes
+
+* check nested submodules and accept permissive BSD variants ([#26](https://github.com/TzuH-Hsu/phm-edge-runtime/issues/26)) ([5616475](https://github.com/TzuH-Hsu/phm-edge-runtime/commit/561647551fc5a5ad7f8ef4ed7039e93ad885480b))
+
 ## [0.2.2](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.1...v0.2.2) (2026-09-25)
 
 
