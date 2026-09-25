@@ -308,14 +308,14 @@ fi
 
 # --- c/d: labeler constants
 if [ "$mixed_generations" -eq 1 ]; then
-  fail "$WORKFLOW_FILE still carries the labeler inline while scripts/issue-labeler.js also exists — the running labeler is the inline one; take the workflow and the script together (docs/template/upgrading.md)"
+  fail "$WORKFLOW_FILE still carries the labeler inline while scripts/issue-labeler.js also exists — the running labeler is the inline one; take the workflow and the script together (upgrading guide: https://github.com/TzuH-Hsu/github-project-os/blob/main/docs/template/upgrading.md)"
 fi
 if [ ! -f "$LABELER_FILE" ]; then
   echo "SKIP: $LABELER_FILE not present"
 elif case "$LABELER_FILE" in *.yml|*.yaml) true ;; *) false ;; esac && grep -qF 'issue-labeler.js' "$LABELER_FILE" && grep -qF 'require(' "$LABELER_FILE"; then
   # The workflow is the thin caller shape (ADR-0008) but the script it
   # requires is not here: the labeler would fail on every issue event.
-  fail "$LABELER_FILE requires scripts/issue-labeler.js, which is missing — take the workflow and the script together (docs/template/upgrading.md)"
+  fail "$LABELER_FILE requires scripts/issue-labeler.js, which is missing — take the workflow and the script together (upgrading guide: https://github.com/TzuH-Hsu/github-project-os/blob/main/docs/template/upgrading.md)"
 else
   lab_prio="$(labeler_list "$LABELER_FILE" ALLOWED_PRIORITIES | with_prefix 'priority:')"
   compare "labeler ALLOWED_PRIORITIES matches the priority:* set in $LABELS_FILE" "$priorities" "$lab_prio" \

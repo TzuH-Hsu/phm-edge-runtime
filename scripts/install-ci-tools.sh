@@ -46,7 +46,7 @@ KNOWN_TOOLS="actionlint, gitleaks, lychee, markdownlint-cli2, yamllint"
 ACTIONLINT_VERSION="1.7.12"
 GITLEAKS_VERSION="8.30.1"
 LYCHEE_VERSION="0.24.2"
-MARKDOWNLINT_CLI2_VERSION="0.23.2"
+MARKDOWNLINT_CLI2_VERSION="0.23.3"
 YAMLLINT_VERSION="1.38.0"
 
 # --- preflight --------------------------------------------------------------

@@ -29,7 +29,7 @@ for wf in .github/workflows/*.yml .github/workflows/*.yaml; do
   while IFS= read -r js; do
     [ -n "$js" ] || continue
     if [ ! -f "$js" ]; then
-      echo "FAIL: $wf requires $js, which is missing — take the workflow and the script together (docs/template/upgrading.md)"
+      echo "FAIL: $wf requires $js, which is missing — take the workflow and the script together (upgrading guide: https://github.com/TzuH-Hsu/github-project-os/blob/main/docs/template/upgrading.md)"
       missing=$((missing + 1))
     elif [ ! -f "${js%.js}.test.js" ]; then
       # ADR-0008: a handler a workflow calls is tested, no exceptions
