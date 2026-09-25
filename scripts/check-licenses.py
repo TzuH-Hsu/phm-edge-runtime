@@ -18,7 +18,8 @@ addition can change the terms. A licence id may carry one trailing `+`
 An empty SBOM passes only when the repository has no dependency manifest; if a
 manifest exists and syft found nothing, the scan is treated as broken. A git
 submodule declared in .gitmodules whose directory is missing or empty also
-fails the check: its components cannot have been scanned.
+fails the check: its components cannot have been scanned. Checked-out
+submodules are searched for their own .gitmodules, to any depth.
 """
 import json
 import os
@@ -28,6 +29,8 @@ import sys
 ALLOWED = {
     "MIT", "MIT-0", "Apache-2.0", "ISC",
     "0BSD", "BSD-1-Clause", "BSD-2-Clause", "BSD-3-Clause",
+    # Permissive BSD variants; BSD-4-Clause (advertising clause) stays out.
+    "BSD-2-Clause-Patent", "BSD-3-Clause-Clear", "BSD-3-Clause-LBNL",
 }
 APPROVED_EXCEPTIONS = {"LLVM-exception"}
 LICENCE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]*\+?$")
@@ -148,8 +151,14 @@ def uninitialised_submodules(root="."):
         return []
     with open(path) as handle:
         declared = re.findall(r"^\s*path\s*=\s*(.+?)\s*$", handle.read(), re.MULTILINE)
-    return [d for d in declared
-            if not os.path.isdir(os.path.join(root, d)) or not os.listdir(os.path.join(root, d))]
+    missing = []
+    for rel in declared:
+        sub = os.path.normpath(os.path.join(root, rel))
+        if not os.path.isdir(sub) or not os.listdir(sub):
+            missing.append(sub)
+        else:
+            missing.extend(uninitialised_submodules(sub))
+    return missing
 
 
 def main() -> int:
