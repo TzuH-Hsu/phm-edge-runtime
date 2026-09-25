@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.3...v0.2.4) (2026-09-25)
+
+
+### Bug Fixes
+
+* exclude GitHub Actions from the licence check and SBOM ([#29](https://github.com/TzuH-Hsu/phm-edge-runtime/issues/29)) ([2ca3829](https://github.com/TzuH-Hsu/phm-edge-runtime/commit/2ca3829e23c0b738b4b2eaa1d90a07e6db2a45b2))
+
 ## [0.2.3](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.2...v0.2.3) (2026-09-25)
 
 
