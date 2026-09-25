@@ -17,9 +17,10 @@ addition can change the terms. A licence id may carry one trailing `+`
 
 An empty SBOM passes only when the repository has no dependency manifest; if a
 manifest exists and syft found nothing, the scan is treated as broken. A git
-submodule declared in .gitmodules whose directory is missing or empty also
-fails the check: its components cannot have been scanned. Checked-out
-submodules are searched for their own .gitmodules, to any depth.
+submodule declared in .gitmodules that is not checked out (no `.git` file or
+directory at its path, whatever else the directory holds) also fails the check:
+its components cannot have been scanned. Checked-out submodules are searched
+for their own .gitmodules, to any depth.
 """
 import json
 import os
@@ -171,7 +172,7 @@ def uninitialised_submodules(root="."):
     missing = []
     for rel in declared:
         sub = os.path.normpath(os.path.join(root, rel))
-        if not os.path.isdir(sub) or not os.listdir(sub):
+        if not os.path.exists(os.path.join(sub, ".git")):
             missing.append(sub)
         else:
             missing.extend(uninitialised_submodules(sub))
