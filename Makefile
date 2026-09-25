@@ -79,7 +79,7 @@ maintenance: ## Everything the weekly maintenance workflow runs (network; not in
 
 lint-licenses: ## Reject copyleft dependencies (GPL/AGPL/LGPL/SSPL/...)
 	@command -v syft >/dev/null 2>&1 || { echo "install: brew install syft"; exit 1; }
-	syft dir:. -o json -q | python3 scripts/check-licenses.py
+	set -o pipefail; syft dir:. -o json -q | python3 scripts/check-licenses.py
 
 sbom: ## Write SPDX SBOM + readable third-party licence list to dist/
 	@command -v syft >/dev/null 2>&1 || { echo "install: brew install syft"; exit 1; }
