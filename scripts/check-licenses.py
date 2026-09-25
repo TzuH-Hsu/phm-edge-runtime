@@ -17,17 +17,23 @@ addition can change the terms. A licence id may carry one trailing `+`
 
 An empty SBOM passes only when the repository has no dependency manifest; if a
 manifest exists and syft found nothing, the scan is treated as broken. A git
-submodule declared in .gitmodules whose directory is missing or empty also
-fails the check: its components cannot have been scanned.
+submodule declared in .gitmodules that is not a working git checkout (git must
+resolve the submodule directory as its own work-tree top level; stale files or
+a dangling `.git` do not count) also fails the check: its components cannot
+have been scanned. Checked-out submodules are searched
+for their own .gitmodules, to any depth.
 """
 import json
 import os
 import re
+import subprocess
 import sys
 
 ALLOWED = {
     "MIT", "MIT-0", "Apache-2.0", "ISC",
     "0BSD", "BSD-1-Clause", "BSD-2-Clause", "BSD-3-Clause",
+    # Permissive BSD variants; BSD-4-Clause (advertising clause) stays out.
+    "BSD-2-Clause-Patent", "BSD-3-Clause-Clear", "BSD-3-Clause-LBNL",
 }
 APPROVED_EXCEPTIONS = {"LLVM-exception"}
 LICENCE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]*\+?$")
@@ -142,14 +148,49 @@ def find_manifests(root="."):
     return found
 
 
+def declared_submodule_paths(gitmodules):
+    """Submodule paths from a .gitmodules file, decoded by git's own config
+    parser so quoted or escaped values (`path = "hash#dir"`) come out right."""
+    result = subprocess.run(
+        ["git", "config", "-z", "-f", gitmodules, "--get-regexp", r"^submodule\..*\.path$"],
+        capture_output=True, text=True,
+    )
+    if result.returncode == 1 and not result.stdout:
+        return []  # no path entries
+    if result.returncode != 0:
+        raise RuntimeError("cannot parse {}: {}".format(gitmodules, result.stderr.strip()))
+    return [entry.split("\n", 1)[1] for entry in result.stdout.split("\0") if "\n" in entry]
+
+
+def is_checked_out(path):
+    """True when git resolves `path` as the top level of a usable work tree."""
+    if not os.path.exists(os.path.join(path, ".git")):
+        return False
+    result = subprocess.run(
+        ["git", "-C", path, "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return False
+    return os.path.realpath(result.stdout.strip()) == os.path.realpath(path)
+
+
 def uninitialised_submodules(root="."):
     path = os.path.join(root, ".gitmodules")
     if not os.path.isfile(path):
         return []
-    with open(path) as handle:
-        declared = re.findall(r"^\s*path\s*=\s*(.+?)\s*$", handle.read(), re.MULTILINE)
-    return [d for d in declared
-            if not os.path.isdir(os.path.join(root, d)) or not os.listdir(os.path.join(root, d))]
+    try:
+        declared = declared_submodule_paths(path)
+    except (OSError, RuntimeError) as err:
+        return ["{} ({})".format(path, err)]
+    missing = []
+    for rel in declared:
+        sub = os.path.normpath(os.path.join(root, rel))
+        if not is_checked_out(sub):
+            missing.append(sub)
+        else:
+            missing.extend(uninitialised_submodules(sub))
+    return missing
 
 
 def main() -> int:
