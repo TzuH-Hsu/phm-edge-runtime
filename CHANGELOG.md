@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.0...v0.2.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* take the template's v0.5.5 labeler and check scripts ([#20](https://github.com/TzuH-Hsu/phm-edge-runtime/issues/20)) ([d7caae1](https://github.com/TzuH-Hsu/phm-edge-runtime/commit/d7caae12bcfc01f96efd10b5226b0e7b1f398084))
+
 ## [0.2.0](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.1.1...v0.2.0) (2026-09-21)
 
 
