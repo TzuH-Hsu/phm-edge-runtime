@@ -76,15 +76,17 @@ maintenance: ## Everything the weekly maintenance workflow runs (network; not in
 # Not wired into `lint`/`ci-pr` yet: there are no dependencies to scan, and syft
 # is not in the pinned CI tool list. Wire both in (scripts/install-ci-tools.sh +
 # the `lint` aggregate) with the first real dependency.
-# Both targets exclude .github/: syft catalogues the workflows' GitHub Actions,
-# which are CI tooling, not delivered with the product, and carry no licence data.
+# Both targets switch off syft's two GitHub Actions catalogers: the actions a
+# workflow or action.yml references are CI tooling, not delivered with the
+# product, and carry no licence data. Do not `--exclude './.github/**'` instead:
+# that also drops the npm dependencies of a local action under .github/actions/.
 
 lint-licenses: ## Reject copyleft dependencies (GPL/AGPL/LGPL/SSPL/...)
 	@command -v syft >/dev/null 2>&1 || { echo "install: brew install syft"; exit 1; }
-	set -o pipefail; syft dir:. -o json -q --exclude './.github/**' | python3 scripts/check-licenses.py
+	set -o pipefail; syft dir:. -o json -q --select-catalogers '-github-actions-usage-cataloger,-github-action-workflow-usage-cataloger' | python3 scripts/check-licenses.py
 
 sbom: ## Write SPDX SBOM + readable third-party licence list to dist/
 	@command -v syft >/dev/null 2>&1 || { echo "install: brew install syft"; exit 1; }
 	@mkdir -p dist
-	syft dir:. -q --exclude './.github/**' -o spdx-json=dist/sbom.spdx.json -o table=dist/third-party-licences.txt
+	syft dir:. -q --select-catalogers '-github-actions-usage-cataloger,-github-action-workflow-usage-cataloger' -o spdx-json=dist/sbom.spdx.json -o table=dist/third-party-licences.txt
 	@echo "wrote dist/sbom.spdx.json and dist/third-party-licences.txt"
