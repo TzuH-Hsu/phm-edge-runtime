@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.4...v0.2.5) (2026-09-26)
+
+
+### Bug Fixes
+
+* switch off syft's Actions catalogers instead of excluding .github ([#32](https://github.com/TzuH-Hsu/phm-edge-runtime/issues/32)) ([82cb863](https://github.com/TzuH-Hsu/phm-edge-runtime/commit/82cb8633d30e7cb0f626ee582995b49de6a65dfe))
+
 ## [0.2.4](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.3...v0.2.4) (2026-09-25)
 
 
