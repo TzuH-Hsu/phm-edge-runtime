@@ -266,8 +266,11 @@ def first_party_names(root="."):
             else:
                 with open(path, "rb") as fh:
                     data = tomllib.load(fh)
-                section = "project" if base == "pyproject.toml" else "package"
-                name = data.get(section, {}).get("name")
+                if base == "pyproject.toml":
+                    name = (data.get("project", {}).get("name")
+                            or data.get("tool", {}).get("poetry", {}).get("name"))
+                else:
+                    name = data.get("package", {}).get("name")
         except (OSError, ValueError, tomllib.TOMLDecodeError):
             continue
         if name:
@@ -324,11 +327,19 @@ def load_exceptions(root="."):
         return {"components": [], "dev_only": []}
     with open(path, encoding="utf-8") as fh:
         data = json.load(fh)
+    def text(value):
+        return isinstance(value, str) and value.strip()
+
+    def texts(value):
+        return isinstance(value, list) and value and all(text(v) for v in value)
+
     for entry in data.get("components", []):
-        if not all(entry.get(k) for k in ("name", "ecosystems", "licences", "reason")):
-            raise ValueError("{}: every component needs name, ecosystems, licences and reason".format(path))
+        if not (isinstance(entry, dict) and text(entry.get("name")) and text(entry.get("reason"))
+                and texts(entry.get("ecosystems")) and texts(entry.get("licences"))):
+            raise ValueError("{}: every component needs name and reason (strings) and "
+                             "ecosystems and licences (non-empty lists of strings)".format(path))
     for item in data.get("dev_only", []):
-        if ":" not in item:
+        if not text(item) or ":" not in item:
             raise ValueError('{}: dev_only entries are "ecosystem:name", got {!r}'.format(path, item))
     return data
 

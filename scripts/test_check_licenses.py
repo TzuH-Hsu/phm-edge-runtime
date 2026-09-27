@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 """Unit tests for scripts/check-licenses.py (run: python3 -m unittest scripts/test_check_licenses.py)."""
 import importlib.util
 import json
@@ -65,6 +66,12 @@ class ExceptionTest(RepoCase):
     def test_dev_only_listing_is_scoped_to_its_ecosystem(self):
         self.assertTrue(self.bad(art("certifi", "MPL-2.0", kind="npm")))
 
+    def test_licences_given_as_a_string_is_rejected(self):
+        self.write("scripts/licence-exceptions.json", json.dumps({"components": [
+            {"name": "libmodbus", "ecosystems": ["conan"], "licences": "LGPL-2.1-or-later", "reason": "x"}]}))
+        with self.assertRaises(ValueError):
+            self.bad(art("x", "MIT"))
+
     def test_bare_dev_only_entry_is_rejected(self):
         self.write("scripts/licence-exceptions.json", json.dumps({"components": [], "dev_only": ["certifi"]}))
         with self.assertRaises(ValueError):
@@ -93,6 +100,10 @@ class FirstPartyTest(RepoCase):
         self.write("go.mod", "module example.com/phm\n")
         self.assertEqual(self.bad(art("phm-web", kind="npm"), art("phm-backend"),
                                   art("example.com/phm", kind="go-module")), set())
+
+    def test_poetry_project_name_is_first_party(self):
+        self.write("pyproject.toml", '[tool.poetry]\nname = "phm-tools"\n')
+        self.assertEqual(self.bad(art("phm_tools")), set())
 
     def test_same_name_in_another_ecosystem_is_not_first_party(self):
         self.write("backend/pyproject.toml", '[project]\nname = "acme_backend"\n')
