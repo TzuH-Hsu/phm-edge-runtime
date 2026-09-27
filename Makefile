@@ -84,16 +84,24 @@ maintenance: ## Everything the weekly maintenance workflow runs (network; not in
 # Lock files such as pnpm-lock.yaml and uv.lock carry no licence data, so both
 # targets let syft look licences up from the package registries (network).
 # SBOM_IMAGES lists the container images that ship with the product (for
-# example SBOM_IMAGES="ghcr.io/owner/api:1.2.3 nginx:1.30.5-alpine"); `sbom`
-# writes one SPDX file per image. Images are not run through lint-licenses:
-# their OS packages are the system layer, covered by the source offer instead.
+# example SBOM_IMAGES="ghcr.io/owner/api:1.2.3 nginx:1.30.5-alpine"). `sbom`
+# writes one full SPDX file per image. `lint-licenses` also checks each image,
+# without its OS packages and binary classifiers: those are the system layer,
+# covered by the source offer; language packages and Go modules are checked.
+# Output names carry a short hash of the image reference, so two references
+# never map to the same file.
 SYFT_ENV := SYFT_JAVASCRIPT_SEARCH_REMOTE_LICENSES=true SYFT_PYTHON_SEARCH_REMOTE_LICENSES=true SYFT_GOLANG_SEARCH_REMOTE_LICENSES=true
 SYFT_CATALOGERS := --select-catalogers '-github-actions-usage-cataloger,-github-action-workflow-usage-cataloger'
+SYFT_IMAGE_CATALOGERS := --select-catalogers '-os,-binary-classifier-cataloger,-elf-binary-package-cataloger,-pe-binary-package-cataloger,-linux-kernel-cataloger'
 SBOM_IMAGES ?=
 
 lint-licenses: ## Reject copyleft dependencies (GPL/AGPL/LGPL/SSPL/...)
 	@command -v syft >/dev/null 2>&1 || { echo "install: brew install syft"; exit 1; }
 	set -o pipefail; $(SYFT_ENV) syft dir:. -o json -q $(SYFT_CATALOGERS) | python3 scripts/check-licenses.py
+	@set -o pipefail; for img in $(SBOM_IMAGES); do \
+		echo "image $$img"; \
+		$(SYFT_ENV) syft "$$img" -o json -q $(SYFT_IMAGE_CATALOGERS) | python3 scripts/check-licenses.py --image || exit 1; \
+	done
 
 sbom: ## Write SPDX SBOM + readable third-party licence list to dist/ (repo and SBOM_IMAGES)
 	@command -v syft >/dev/null 2>&1 || { echo "install: brew install syft"; exit 1; }
@@ -101,7 +109,7 @@ sbom: ## Write SPDX SBOM + readable third-party licence list to dist/ (repo and 
 	$(SYFT_ENV) syft dir:. -q $(SYFT_CATALOGERS) -o spdx-json=dist/sbom.spdx.json -o table=dist/third-party-licences.txt
 	@echo "wrote dist/sbom.spdx.json and dist/third-party-licences.txt"
 	@for img in $(SBOM_IMAGES); do \
-		safe=$$(printf '%s' "$$img" | tr '/:@' '___'); \
+		safe=$$(printf '%s' "$$img" | tr -c 'A-Za-z0-9.-' '_')-$$(printf '%s' "$$img" | python3 -c 'import hashlib,sys;print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest()[:8])'); \
 		$(SYFT_ENV) syft "$$img" -q -o spdx-json="dist/sbom-image-$$safe.spdx.json" -o table="dist/third-party-licences-image-$$safe.txt" || exit 1; \
 		echo "wrote dist/sbom-image-$$safe.spdx.json"; \
 	done

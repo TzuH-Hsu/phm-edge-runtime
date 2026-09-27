@@ -34,6 +34,10 @@ Three kinds of component are not judged against the allowlist:
   scripts/licence-exceptions.json: a named component may carry one of the listed
   licences. Every entry names the decision record that allows it. Another
   component with the same licence still fails.
+
+With --image the SBOM is a container image scanned without its OS package and
+binary catalogers (see the Makefile): the remaining language packages are
+checked, and the repository's submodule and manifest checks are skipped.
 """
 import json
 import os
@@ -220,8 +224,11 @@ def normalise(name):
 
 
 def walk_files(root, names):
+    """Files in this repository only: nested git repositories (submodules) are
+    third-party components and are not searched."""
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS
+                       and not os.path.exists(os.path.join(dirpath, d, ".git"))]
         for f in filenames:
             if f in names:
                 yield os.path.join(dirpath, f)
@@ -252,8 +259,9 @@ def first_party_names(root="."):
     return names
 
 
-def uv_dev_only(path):
-    """Packages reachable only through dependency groups in one uv.lock."""
+def uv_closures(path):
+    """(shipped, dev) package-name closures of one uv.lock: shipped is what the
+    project packages depend on, dev what their dependency groups pull in."""
     with open(path, "rb") as fh:
         packages = tomllib.load(fh).get("package", [])
     deps = {}
@@ -280,15 +288,18 @@ def uv_dev_only(path):
                 stack.extend(deps.get(node, ()))
         return seen
 
-    shipped = reach(roots)
-    return reach(group_heads) - shipped
+    return reach(roots), reach(group_heads)
 
 
 def dev_only_names(root=".", exceptions=None):
-    names = {normalise(n) for n in (exceptions or {}).get("dev_only", [])}
+    """Explicit dev_only names, plus packages that uv dependency groups pull in
+    and that no uv project in the repository ships."""
+    shipped, dev = set(), set()
     for path in walk_files(root, {"uv.lock"}):
-        names |= uv_dev_only(path)
-    return names
+        lock_shipped, lock_dev = uv_closures(path)
+        shipped |= lock_shipped
+        dev |= lock_dev
+    return {normalise(n) for n in (exceptions or {}).get("dev_only", [])} | (dev - shipped)
 
 
 def load_exceptions(root="."):
@@ -328,12 +339,18 @@ def violations(artifacts, root="."):
 
 
 def main() -> int:
+    image_mode = "--image" in sys.argv[1:]
     raw = sys.stdin.read().strip()
     if not raw:
         print("check-licenses: empty SBOM on stdin", file=sys.stderr)
         return 2
     artifacts = json.loads(raw).get("artifacts", [])
-    missing = uninitialised_submodules()
+    if image_mode:
+        # A container image scan: the repository's submodules and manifests say
+        # nothing about it, and an image with no language packages is fine.
+        missing, artifacts_expected = [], False
+    else:
+        missing, artifacts_expected = uninitialised_submodules(), True
     if missing:
         print("check-licenses: submodules not checked out, their licences were not scanned:")
         for path in sorted(missing):
@@ -341,7 +358,7 @@ def main() -> int:
         print("run `git submodule update --init --recursive` first")
         return 1
     if not artifacts:
-        manifests = find_manifests()
+        manifests = find_manifests() if artifacts_expected else []
         if manifests:
             print("check-licenses: syft found no components, but these manifests exist:")
             for path in sorted(manifests):

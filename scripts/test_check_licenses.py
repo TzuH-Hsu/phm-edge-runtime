@@ -136,5 +136,32 @@ class UvDevOnlyTest(RepoCase):
         self.assertTrue(self.bad(art("fastapi", "AGPL-3.0-only")))
 
 
+class SubmoduleBoundaryTest(RepoCase):
+    def test_package_inside_a_submodule_is_not_first_party(self):
+        self.write("vendor/lib/package.json", json.dumps({"name": "vendored-lib"}))
+        self.write("vendor/lib/.git", "gitdir: ../../.git/modules/lib\n")
+        self.assertTrue(self.bad(art("vendored-lib")))
+
+
+class UvAcrossLocksTest(RepoCase):
+    def test_dev_in_one_lock_but_shipped_by_another_is_checked(self):
+        self.write("backend/uv.lock", UV_LOCK)
+        self.write("worker/uv.lock", """
+version = 1
+
+[[package]]
+name = "phm-worker"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [{ name = "certifi" }]
+
+[[package]]
+name = "certifi"
+version = "1.0"
+source = { registry = "https://pypi.org/simple" }
+""")
+        self.assertTrue(self.bad(art("certifi", "MPL-2.0")))
+
+
 if __name__ == "__main__":
     unittest.main()
