@@ -51,27 +51,39 @@ class ExceptionTest(RepoCase):
     def setUp(self):
         super().setUp()
         self.write("scripts/licence-exceptions.json", json.dumps({
-            "components": [{"name": "libmodbus", "licences": ["LGPL-2.1-or-later"], "reason": "test"}],
-            "dev_only": ["certifi"],
+            "components": [{"name": "libmodbus", "ecosystems": ["conan"],
+                            "licences": ["LGPL-2.1-or-later"], "reason": "test"}],
+            "dev_only": ["python:certifi"],
         }))
 
     def test_named_component_with_listed_licence_passes(self):
-        self.assertEqual(self.bad(art("libmodbus", "LGPL-2.1-or-later")), set())
+        self.assertEqual(self.bad(art("libmodbus", "LGPL-2.1-or-later", kind="conan")), set())
+
+    def test_same_name_in_another_ecosystem_gets_no_exception(self):
+        self.assertTrue(self.bad(art("libmodbus", "LGPL-2.1-or-later", kind="npm")))
+
+    def test_dev_only_listing_is_scoped_to_its_ecosystem(self):
+        self.assertTrue(self.bad(art("certifi", "MPL-2.0", kind="npm")))
+
+    def test_bare_dev_only_entry_is_rejected(self):
+        self.write("scripts/licence-exceptions.json", json.dumps({"components": [], "dev_only": ["certifi"]}))
+        with self.assertRaises(ValueError):
+            self.bad(art("x", "MIT"))
 
     def test_same_licence_on_another_component_fails(self):
         self.assertTrue(self.bad(art("libfoo", "LGPL-2.1-or-later")))
 
     def test_named_component_with_unlisted_licence_fails(self):
-        self.assertTrue(self.bad(art("libmodbus", "GPL-3.0-only")))
+        self.assertTrue(self.bad(art("libmodbus", "GPL-3.0-only", kind="conan")))
 
     def test_dev_only_listing_is_skipped(self):
         self.assertEqual(self.bad(art("certifi", "MPL-2.0")), set())
 
     def test_entry_without_reason_is_rejected(self):
         self.write("scripts/licence-exceptions.json", json.dumps({
-            "components": [{"name": "libmodbus", "licences": ["LGPL-2.1-or-later"]}]}))
+            "components": [{"name": "libmodbus", "ecosystems": ["conan"], "licences": ["LGPL-2.1-or-later"]}]}))
         with self.assertRaises(ValueError):
-            self.bad(art("libmodbus", "LGPL-2.1-or-later"))
+            self.bad(art("libmodbus", "LGPL-2.1-or-later", kind="conan"))
 
 
 class FirstPartyTest(RepoCase):

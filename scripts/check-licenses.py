@@ -29,11 +29,12 @@ Three kinds of component are not judged against the allowlist:
   Cargo.toml and go.mod), which syft lists without a licence;
 - development-only dependencies: derived from uv.lock dependency groups, and
   listed under "dev_only" in scripts/licence-exceptions.json for ecosystems
-  whose lock file syft does not mark (pnpm), as "npm:name" or a bare name for
-  every ecosystem. Not applied to --image scans: an image ships what it holds;
+  whose lock file syft does not mark (pnpm), as "ecosystem:name" (for
+  example "npm:eslint"). Not applied to --image scans: an image ships what it
+  holds;
 - component-level exceptions under "components" in
-  scripts/licence-exceptions.json: a named component may carry one of the listed
-  licences. Every entry names the decision record that allows it. Another
+  scripts/licence-exceptions.json: a named component, in the listed syft
+  ecosystems, may carry one of the listed licences. Every entry names the decision record that allows it. Another
   component with the same licence still fails.
 
 With --image the SBOM is a container image scanned without its OS package and
@@ -324,14 +325,21 @@ def load_exceptions(root="."):
     with open(path, encoding="utf-8") as fh:
         data = json.load(fh)
     for entry in data.get("components", []):
-        if not entry.get("name") or not entry.get("licences") or not entry.get("reason"):
-            raise ValueError("{}: every component needs name, licences and reason".format(path))
+        if not all(entry.get(k) for k in ("name", "ecosystems", "licences", "reason")):
+            raise ValueError("{}: every component needs name, ecosystems, licences and reason".format(path))
+    for item in data.get("dev_only", []):
+        if ":" not in item:
+            raise ValueError('{}: dev_only entries are "ecosystem:name", got {!r}'.format(path, item))
     return data
 
 
-def excepted(name, expr, exceptions):
+def excepted(ident, expr, exceptions):
+    """A component exception applies to the named package in the listed syft
+    ecosystems only. Conditions an exception carries that no SBOM can show,
+    such as libmodbus being linked dynamically, are enforced by the build."""
     for entry in exceptions.get("components", []):
-        if normalise(entry["name"]) == normalise(name) and expr.strip() in entry["licences"]:
+        if expr.strip() in entry["licences"] and any(
+                identity(eco, entry["name"]) == ident for eco in entry["ecosystems"]):
             return True
     return False
 
@@ -344,19 +352,18 @@ def violations(artifacts, root=".", image=False):
     listed_dev = set()
     if not image:
         skip |= dev_only_names(root)
-        listed_dev = {(e.split(":", 1)[0], e.split(":", 1)[1]) if ":" in e else ("*", e)
-                      for e in exceptions.get("dev_only", [])}
+        listed_dev = {identity(*e.split(":", 1)) for e in exceptions.get("dev_only", [])}
     bad = set()
     for art in artifacts:
         name = art.get("name", "?")
         ident = identity(art.get("type", ""), name)
-        if ident in skip or ("*", name) in listed_dev or (ident[0], name) in listed_dev:
+        if ident in skip or ident in listed_dev:
             continue
         version = art.get("version", "?")
         entries = art.get("licenses") or []
         exprs = [e.get("spdxExpression") or e.get("value") or "" for e in entries] or [""]
         for expr in exprs:
-            if not licence_ok(expr) and not excepted(name, expr, exceptions):
+            if not licence_ok(expr) and not excepted(ident, expr, exceptions):
                 bad.add("{}@{}  {}".format(name, version, expr or "(no licence)"))
     return bad
 
