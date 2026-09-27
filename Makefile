@@ -107,10 +107,10 @@ lint-licenses: ## Reject copyleft dependencies (GPL/AGPL/LGPL/SSPL/...)
 sbom: ## Write SPDX SBOM + readable third-party licence list to dist/ (repo and SBOM_IMAGES)
 	@command -v syft >/dev/null 2>&1 || { echo "install: brew install syft"; exit 1; }
 	@mkdir -p dist
-	$(SYFT_ENV) syft dir:. -q $(SYFT_CATALOGERS) -o spdx-json=dist/sbom.spdx.json -o table=dist/third-party-licences.txt
+	$(SYFT_ENV) syft dir:. -q $(SYFT_CATALOGERS) -o spdx-json=dist/sbom.spdx.json -o template=dist/third-party-licences.txt -t scripts/licence-table.tmpl
 	@echo "wrote dist/sbom.spdx.json and dist/third-party-licences.txt"
 	@for img in $(SBOM_IMAGES); do \
 		safe=$$(printf '%s' "$$img" | tr -c 'A-Za-z0-9.-' '_')-$$(printf '%s' "$$img" | python3 -c 'import hashlib,sys;print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest()[:8])'); \
-		$(SYFT_ENV) syft "$$img" -q -o spdx-json="dist/sbom-image-$$safe.spdx.json" -o table="dist/third-party-licences-image-$$safe.txt" || exit 1; \
+		$(SYFT_ENV) syft "$$img" -q -o spdx-json="dist/sbom-image-$$safe.spdx.json" -o template="dist/third-party-licences-image-$$safe.txt" -t scripts/licence-table.tmpl || exit 1; \
 		echo "wrote dist/sbom-image-$$safe.spdx.json"; \
 	done

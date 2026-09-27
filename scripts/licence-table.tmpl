@@ -1,0 +1,6 @@
+{{- /* SPDX-License-Identifier: Apache-2.0 */ -}}
+{{- /* syft template for dist/third-party-licences*.txt: one component per line, tab-separated. */ -}}
+NAME	VERSION	TYPE	LICENCES
+{{- range .artifacts }}
+{{ .name }}	{{ .version }}	{{ .type }}	{{ range $i, $l := .licenses }}{{ if $i }} | {{ end }}{{ if $l.spdxExpression }}{{ $l.spdxExpression }}{{ else }}{{ $l.value }}{{ end }}{{ else }}(none){{ end }}
+{{- end }}
