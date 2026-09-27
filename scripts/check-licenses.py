@@ -28,8 +28,9 @@ Three kinds of component are not judged against the allowlist:
 - the repository's own packages (names read from package.json, pyproject.toml,
   Cargo.toml and go.mod), which syft lists without a licence;
 - development-only dependencies: derived from uv.lock dependency groups, and
-  listed by name under "dev_only" in scripts/licence-exceptions.json for
-  ecosystems whose lock file syft does not mark (pnpm);
+  listed under "dev_only" in scripts/licence-exceptions.json for ecosystems
+  whose lock file syft does not mark (pnpm), as "npm:name" or a bare name for
+  every ecosystem. Not applied to --image scans: an image ships what it holds;
 - component-level exceptions under "components" in
   scripts/licence-exceptions.json: a named component may carry one of the listed
   licences. Every entry names the decision record that allows it. Another
@@ -218,9 +219,23 @@ def uninitialised_submodules(root="."):
 
 
 def normalise(name):
-    """Package names compare case-insensitively, with -, _ and . equivalent
-    (PEP 503); harmless for the other ecosystems."""
+    """PEP 503 name: case-insensitive, with -, _ and . equivalent."""
     return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def identity(ecosystem, name):
+    """Skip-set key: the syft package type plus the name as that ecosystem
+    compares it. Only Python names are folded; npm, Go and Rust names are kept
+    as written, so a package in one ecosystem never matches another's."""
+    return (ecosystem, normalise(name) if ecosystem == "python" else name)
+
+
+FIRST_PARTY_MANIFESTS = {
+    "package.json": "npm",
+    "pyproject.toml": "python",
+    "Cargo.toml": "rust-crate",
+    "go.mod": "go-module",
+}
 
 
 def walk_files(root, names):
@@ -235,9 +250,9 @@ def walk_files(root, names):
 
 
 def first_party_names(root="."):
-    """Names of the packages this repository itself declares."""
+    """Identities of the packages this repository itself declares."""
     names = set()
-    for path in walk_files(root, {"package.json", "pyproject.toml", "Cargo.toml", "go.mod"}):
+    for path in walk_files(root, set(FIRST_PARTY_MANIFESTS)):
         base = os.path.basename(path)
         try:
             if base == "package.json":
@@ -255,7 +270,7 @@ def first_party_names(root="."):
         except (OSError, ValueError, tomllib.TOMLDecodeError):
             continue
         if name:
-            names.add(normalise(name))
+            names.add(identity(FIRST_PARTY_MANIFESTS[base], name))
     return names
 
 
@@ -291,15 +306,15 @@ def uv_closures(path):
     return reach(roots), reach(group_heads)
 
 
-def dev_only_names(root=".", exceptions=None):
-    """Explicit dev_only names, plus packages that uv dependency groups pull in
-    and that no uv project in the repository ships."""
+def dev_only_names(root="."):
+    """Python packages that uv dependency groups pull in and that no uv project
+    in the repository ships."""
     shipped, dev = set(), set()
     for path in walk_files(root, {"uv.lock"}):
         lock_shipped, lock_dev = uv_closures(path)
         shipped |= lock_shipped
         dev |= lock_dev
-    return {normalise(n) for n in (exceptions or {}).get("dev_only", [])} | (dev - shipped)
+    return {identity("python", n) for n in dev - shipped}
 
 
 def load_exceptions(root="."):
@@ -321,13 +336,21 @@ def excepted(name, expr, exceptions):
     return False
 
 
-def violations(artifacts, root="."):
+def violations(artifacts, root=".", image=False):
+    """Components outside the allowlist. For a shipped image (image=True) the
+    dev-only exemptions do not apply: whatever is in the image is distributed."""
     exceptions = load_exceptions(root)
-    skip = first_party_names(root) | dev_only_names(root, exceptions)
+    skip = first_party_names(root)
+    listed_dev = set()
+    if not image:
+        skip |= dev_only_names(root)
+        listed_dev = {(e.split(":", 1)[0], e.split(":", 1)[1]) if ":" in e else ("*", e)
+                      for e in exceptions.get("dev_only", [])}
     bad = set()
     for art in artifacts:
         name = art.get("name", "?")
-        if normalise(name) in skip:
+        ident = identity(art.get("type", ""), name)
+        if ident in skip or ("*", name) in listed_dev or (ident[0], name) in listed_dev:
             continue
         version = art.get("version", "?")
         entries = art.get("licenses") or []
@@ -367,7 +390,7 @@ def main() -> int:
         print("check-licenses: no dependency manifests and no components - nothing to check")
         return 0
     try:
-        bad = violations(artifacts)
+        bad = violations(artifacts, image=image_mode)
     except (OSError, ValueError, tomllib.TOMLDecodeError) as err:
         print("check-licenses: {}".format(err))
         return 1

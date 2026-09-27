@@ -11,8 +11,9 @@ cl = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cl)
 
 
-def art(name, *licences, version="1.0.0"):
-    return {"name": name, "version": version, "licenses": [{"value": v} for v in licences]}
+def art(name, *licences, version="1.0.0", kind="python"):
+    return {"name": name, "version": version, "type": kind,
+            "licenses": [{"value": v} for v in licences]}
 
 
 class RepoCase(unittest.TestCase):
@@ -29,8 +30,8 @@ class RepoCase(unittest.TestCase):
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(text)
 
-    def bad(self, *artifacts):
-        return cl.violations(list(artifacts), self.root)
+    def bad(self, *artifacts, image=False):
+        return cl.violations(list(artifacts), self.root, image=image)
 
 
 class AllowlistTest(RepoCase):
@@ -78,11 +79,16 @@ class FirstPartyTest(RepoCase):
         self.write("web/package.json", json.dumps({"name": "phm-web"}))
         self.write("backend/pyproject.toml", '[project]\nname = "phm_backend"\n')
         self.write("go.mod", "module example.com/phm\n")
-        self.assertEqual(self.bad(art("phm-web"), art("phm-backend"), art("example.com/phm")), set())
+        self.assertEqual(self.bad(art("phm-web", kind="npm"), art("phm-backend"),
+                                  art("example.com/phm", kind="go-module")), set())
+
+    def test_same_name_in_another_ecosystem_is_not_first_party(self):
+        self.write("backend/pyproject.toml", '[project]\nname = "acme_backend"\n')
+        self.assertTrue(self.bad(art("acme-backend", "GPL-3.0-only", kind="npm")))
 
     def test_other_unlicensed_packages_still_fail(self):
         self.write("package.json", json.dumps({"name": "phm-web"}))
-        self.assertTrue(self.bad(art("left-pad")))
+        self.assertTrue(self.bad(art("left-pad", kind="npm")))
 
 
 UV_LOCK = """
@@ -129,6 +135,9 @@ class UvDevOnlyTest(RepoCase):
     def test_dev_group_and_its_closure_are_skipped(self):
         self.assertEqual(self.bad(art("pytest", "GPL-2.0-only"), art("certifi", "MPL-2.0")), set())
 
+    def test_image_scan_ignores_dev_only_exemptions(self):
+        self.assertTrue(self.bad(art("pytest", "GPL-2.0-only"), image=True))
+
     def test_package_also_shipped_is_still_checked(self):
         self.assertTrue(self.bad(art("httpx", "GPL-3.0-only")))
 
@@ -140,7 +149,7 @@ class SubmoduleBoundaryTest(RepoCase):
     def test_package_inside_a_submodule_is_not_first_party(self):
         self.write("vendor/lib/package.json", json.dumps({"name": "vendored-lib"}))
         self.write("vendor/lib/.git", "gitdir: ../../.git/modules/lib\n")
-        self.assertTrue(self.bad(art("vendored-lib")))
+        self.assertTrue(self.bad(art("vendored-lib", kind="npm")))
 
 
 class UvAcrossLocksTest(RepoCase):
