@@ -37,9 +37,11 @@ Three kinds of component are not judged against the allowlist:
   ecosystems, may carry one of the listed licences. Every entry names the decision record that allows it. Another
   component with the same licence still fails.
 
-With --image the SBOM is a container image scanned without its OS package and
-binary catalogers (see the Makefile): the remaining language packages are
-checked, and the repository's submodule and manifest checks are skipped.
+With --image the SBOM is a container image scanned without its binary
+catalogers (see the Makefile). Language packages are checked against the
+allowlist; OS packages are the system layer, where GPL and LGPL are accepted
+but AGPL, SSPL, BUSL, Elastic, RSAL and Timescale licences still fail unless
+excepted. The repository's submodule and manifest checks are skipped.
 """
 import json
 import os
@@ -81,6 +83,13 @@ MANIFESTS = {
 }
 MANIFEST_PATTERNS = re.compile(r"^requirements[-_.].*\.txt$|\.(csproj|fsproj|vbproj|gemspec|cabal)$")
 SKIP_DIRS = {".git", "node_modules", "dist", ".venv", "venv"}
+# Where vendored third-party source conventionally lives; never first-party.
+VENDOR_DIRS = {"vendor", "third_party", "third-party", "external", "extern"}
+# OS package types in an image scan. These are the system layer: GPL and LGPL
+# are expected there and are covered by the source offer, but a service
+# licence the allowlist policy rejects outright is still refused.
+OS_PACKAGE_TYPES = {"apk", "deb", "rpm", "alpm", "portage"}
+RESTRICTED_SERVICE = re.compile(r"^(AGPL|SSPL|BUSL|Elastic|RSAL|Timescale|LicenseRef-Timescale)", re.I)
 EXCEPTIONS_FILE = os.path.join("scripts", "licence-exceptions.json")
 
 
@@ -243,7 +252,7 @@ def walk_files(root, names):
     """Files in this repository only: nested git repositories (submodules) are
     third-party components and are not searched."""
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and d not in VENDOR_DIRS
                        and not os.path.exists(os.path.join(dirpath, d, ".git"))]
         for f in filenames:
             if f in names:
@@ -251,14 +260,17 @@ def walk_files(root, names):
 
 
 def first_party_names(root="."):
-    """Identities of the packages this repository itself declares."""
+    """(ecosystem, name, version) of the packages this repository declares;
+    version is None when the manifest has none (go.mod), matching any version."""
     names = set()
     for path in walk_files(root, set(FIRST_PARTY_MANIFESTS)):
         base = os.path.basename(path)
         try:
+            version = None
             if base == "package.json":
                 with open(path, encoding="utf-8") as fh:
-                    name = json.load(fh).get("name")
+                    data = json.load(fh)
+                name, version = data.get("name"), data.get("version")
             elif base == "go.mod":
                 with open(path, encoding="utf-8") as fh:
                     match = re.search(r"^module\s+(\S+)", fh.read(), re.M)
@@ -267,22 +279,25 @@ def first_party_names(root="."):
                 with open(path, "rb") as fh:
                     data = tomllib.load(fh)
                 if base == "pyproject.toml":
-                    name = (data.get("project", {}).get("name")
-                            or data.get("tool", {}).get("poetry", {}).get("name"))
+                    table = data.get("project", {}) or data.get("tool", {}).get("poetry", {})
                 else:
-                    name = data.get("package", {}).get("name")
+                    table = data.get("package", {})
+                name, version = table.get("name"), table.get("version")
         except (OSError, ValueError, tomllib.TOMLDecodeError):
             continue
         if name:
-            names.add(identity(FIRST_PARTY_MANIFESTS[base], name))
+            names.add(identity(FIRST_PARTY_MANIFESTS[base], name) + (version,))
     return names
 
 
-def uv_closures(path):
+def uv_closures(path, versions):
     """(shipped, dev) package-name closures of one uv.lock: shipped is what the
-    project packages depend on, dev what their dependency groups pull in."""
+    project packages depend on, dev what their dependency groups pull in. The
+    locked versions are collected into `versions`."""
     with open(path, "rb") as fh:
         packages = tomllib.load(fh).get("package", [])
+    for pkg in packages:
+        versions.setdefault(normalise(pkg["name"]), set()).add(pkg.get("version"))
     deps = {}
     roots = []
     group_heads = set()
@@ -313,12 +328,12 @@ def uv_closures(path):
 def dev_only_names(root="."):
     """Python packages that uv dependency groups pull in and that no uv project
     in the repository ships."""
-    shipped, dev = set(), set()
+    shipped, dev, versions = set(), set(), {}
     for path in walk_files(root, {"uv.lock"}):
-        lock_shipped, lock_dev = uv_closures(path)
+        lock_shipped, lock_dev = uv_closures(path, versions)
         shipped |= lock_shipped
         dev |= lock_dev
-    return {identity("python", n) for n in dev - shipped}
+    return {identity("python", n) + (v,) for n in dev - shipped for v in versions.get(n, {None})}
 
 
 def load_exceptions(root="."):
@@ -355,6 +370,14 @@ def excepted(ident, expr, exceptions):
     return False
 
 
+def listed_identity(entry):
+    """A dev_only entry "ecosystem:name" or "ecosystem:name@version"; without a
+    version it covers every version of that package."""
+    eco, rest = entry.split(":", 1)
+    name, _, version = rest.rpartition("@") if "@" in rest[1:] else (rest, "", "")
+    return identity(eco, name) + (version or None,)
+
+
 def violations(artifacts, root=".", image=False):
     """Components outside the allowlist. For a shipped image (image=True) the
     dev-only exemptions do not apply: whatever is in the image is distributed."""
@@ -363,19 +386,26 @@ def violations(artifacts, root=".", image=False):
     listed_dev = set()
     if not image:
         skip |= dev_only_names(root)
-        listed_dev = {identity(*e.split(":", 1)) for e in exceptions.get("dev_only", [])}
+        listed_dev = {listed_identity(e) for e in exceptions.get("dev_only", [])}
     bad = set()
     for art in artifacts:
         name = art.get("name", "?")
-        ident = identity(art.get("type", ""), name)
-        if ident in skip or ident in listed_dev:
+        kind = art.get("type", "")
+        ident = identity(kind, name)
+        version = art.get("version")
+        if {ident + (version,), ident + (None,)} & (skip | listed_dev):
             continue
-        version = art.get("version", "?")
         entries = art.get("licenses") or []
         exprs = [e.get("spdxExpression") or e.get("value") or "" for e in entries] or [""]
         for expr in exprs:
-            if not licence_ok(expr) and not excepted(ident, expr, exceptions):
-                bad.add("{}@{}  {}".format(name, version, expr or "(no licence)"))
+            if excepted(ident, expr, exceptions):
+                continue
+            if image and kind in OS_PACKAGE_TYPES:
+                ok = not any(RESTRICTED_SERVICE.match(tok) for tok in tokenize(expr))
+            else:
+                ok = licence_ok(expr)
+            if not ok:
+                bad.add("{}@{}  {}".format(name, version or "?", expr or "(no licence)"))
     return bad
 
 

@@ -85,14 +85,15 @@ maintenance: ## Everything the weekly maintenance workflow runs (network; not in
 # targets let syft look licences up from the package registries (network).
 # SBOM_IMAGES lists the container images that ship with the product (for
 # example SBOM_IMAGES="ghcr.io/owner/api:1.2.3 nginx:1.30.5-alpine"). `sbom`
-# writes one full SPDX file per image. `lint-licenses` also checks each image,
-# without its OS packages and binary classifiers: those are the system layer,
-# covered by the source offer; language packages and Go modules are checked.
+# writes one full SPDX file per image. `lint-licenses` also checks each image
+# (without binary classifiers): language packages and Go modules against the
+# allowlist; OS packages are the system layer, covered by the source offer, so
+# only licences the policy rejects outright (AGPL, SSPL, ...) fail there.
 # Output names carry a short hash of the image reference, so two references
 # never map to the same file.
 SYFT_ENV := SYFT_JAVASCRIPT_SEARCH_REMOTE_LICENSES=true SYFT_PYTHON_SEARCH_REMOTE_LICENSES=true SYFT_GOLANG_SEARCH_REMOTE_LICENSES=true
 SYFT_CATALOGERS := --select-catalogers '-github-actions-usage-cataloger,-github-action-workflow-usage-cataloger'
-SYFT_IMAGE_CATALOGERS := --select-catalogers '-os,-binary-classifier-cataloger,-elf-binary-package-cataloger,-pe-binary-package-cataloger,-linux-kernel-cataloger'
+SYFT_IMAGE_CATALOGERS := --select-catalogers '-binary-classifier-cataloger,-elf-binary-package-cataloger,-pe-binary-package-cataloger,-linux-kernel-cataloger'
 SBOM_IMAGES ?=
 
 lint-licenses: ## Reject copyleft dependencies (GPL/AGPL/LGPL/SSPL/...)

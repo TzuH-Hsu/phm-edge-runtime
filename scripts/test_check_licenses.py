@@ -72,6 +72,12 @@ class ExceptionTest(RepoCase):
         with self.assertRaises(ValueError):
             self.bad(art("x", "MIT"))
 
+    def test_versioned_dev_only_entry_covers_only_that_version(self):
+        self.write("scripts/licence-exceptions.json", json.dumps({"components": [],
+                                                                   "dev_only": ["npm:eslint@9.1.0"]}))
+        self.assertEqual(self.bad(art("eslint", "GPL-3.0-only", version="9.1.0", kind="npm")), set())
+        self.assertTrue(self.bad(art("eslint", "GPL-3.0-only", version="8.0.0", kind="npm")))
+
     def test_bare_dev_only_entry_is_rejected(self):
         self.write("scripts/licence-exceptions.json", json.dumps({"components": [], "dev_only": ["certifi"]}))
         with self.assertRaises(ValueError):
@@ -104,6 +110,14 @@ class FirstPartyTest(RepoCase):
     def test_poetry_project_name_is_first_party(self):
         self.write("pyproject.toml", '[tool.poetry]\nname = "phm-tools"\n')
         self.assertEqual(self.bad(art("phm_tools")), set())
+
+    def test_other_version_of_a_first_party_name_is_checked(self):
+        self.write("package.json", json.dumps({"name": "same", "version": "1.0.0"}))
+        self.assertTrue(self.bad(art("same", "GPL-3.0-only", version="9.9.9", kind="npm")))
+
+    def test_vendored_manifest_is_not_first_party(self):
+        self.write("vendor/crate/Cargo.toml", '[package]\nname = "vendored"\nversion = "1.0.0"\n')
+        self.assertTrue(self.bad(art("vendored", kind="rust-crate")))
 
     def test_same_name_in_another_ecosystem_is_not_first_party(self):
         self.write("backend/pyproject.toml", '[project]\nname = "acme_backend"\n')
@@ -156,10 +170,14 @@ class UvDevOnlyTest(RepoCase):
         self.write("backend/uv.lock", UV_LOCK)
 
     def test_dev_group_and_its_closure_are_skipped(self):
-        self.assertEqual(self.bad(art("pytest", "GPL-2.0-only"), art("certifi", "MPL-2.0")), set())
+        self.assertEqual(self.bad(art("pytest", "GPL-2.0-only", version="1.0"),
+                                  art("certifi", "MPL-2.0", version="1.0")), set())
+
+    def test_other_version_of_a_dev_package_is_checked(self):
+        self.assertTrue(self.bad(art("pytest", "GPL-2.0-only", version="9.0")))
 
     def test_image_scan_ignores_dev_only_exemptions(self):
-        self.assertTrue(self.bad(art("pytest", "GPL-2.0-only"), image=True))
+        self.assertTrue(self.bad(art("pytest", "GPL-2.0-only", version="1.0"), image=True))
 
     def test_package_also_shipped_is_still_checked(self):
         self.assertTrue(self.bad(art("httpx", "GPL-3.0-only")))
@@ -194,6 +212,19 @@ source = { registry = "https://pypi.org/simple" }
 """)
         self.assertTrue(self.bad(art("certifi", "MPL-2.0")))
 
+
+
+class ImageOsPackageTest(RepoCase):
+    def test_gpl_os_package_passes_in_an_image(self):
+        self.assertEqual(self.bad(art("bash", "GPL-3.0-or-later", kind="deb"), image=True), set())
+
+    def test_restricted_service_os_package_fails_in_an_image(self):
+        self.assertTrue(self.bad(art("mongodb", "SSPL-1.0", kind="deb"), image=True))
+
+    def test_excepted_os_package_passes_in_an_image(self):
+        self.write("scripts/licence-exceptions.json", json.dumps({"components": [
+            {"name": "timescaledb", "ecosystems": ["apk"], "licences": ["LicenseRef-Timescale"], "reason": "t"}]}))
+        self.assertEqual(self.bad(art("timescaledb", "LicenseRef-Timescale", kind="apk"), image=True), set())
 
 if __name__ == "__main__":
     unittest.main()
