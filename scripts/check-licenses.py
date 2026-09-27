@@ -3,9 +3,10 @@
 
 Reads a syft JSON SBOM on stdin and exits non-zero unless every component's
 licence satisfies the allowlist in AGENTS.md (section on licence hygiene): MIT,
-Apache-2.0, BSD, ISC. This library is Apache-2.0 and is meant to be usable
-inside commercial products, so a copyleft dependency would propagate its terms
-downstream to every user of the library.
+Apache-2.0, BSD, ISC, plus notice-only licences (curl, blessing, Zlib, PSF-2.0,
+PostgreSQL, BSL-1.0, CC-BY-4.0). This library is Apache-2.0 and is meant to be
+usable inside commercial products, so a copyleft dependency would propagate
+its terms downstream to every user of the library.
 
 Fails closed: a component with no licence, NOASSERTION, a LicenseRef-* or any
 identifier not on the allowlist is rejected. SPDX expressions are evaluated,
@@ -22,6 +23,17 @@ resolve the submodule directory as its own work-tree top level; stale files or
 a dangling `.git` do not count) also fails the check: its components cannot
 have been scanned. Checked-out submodules are searched
 for their own .gitmodules, to any depth.
+
+Three kinds of component are not judged against the allowlist:
+- the repository's own packages (names read from package.json, pyproject.toml,
+  Cargo.toml and go.mod), which syft lists without a licence;
+- development-only dependencies: derived from uv.lock dependency groups, and
+  listed by name under "dev_only" in scripts/licence-exceptions.json for
+  ecosystems whose lock file syft does not mark (pnpm);
+- component-level exceptions under "components" in
+  scripts/licence-exceptions.json: a named component may carry one of the listed
+  licences. Every entry names the decision record that allows it. Another
+  component with the same licence still fails.
 """
 import json
 import os
@@ -29,11 +41,18 @@ import re
 import subprocess
 import sys
 
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python < 3.11
+    sys.exit("check-licenses: needs Python 3.11 or later (tomllib)")
+
 ALLOWED = {
     "MIT", "MIT-0", "Apache-2.0", "ISC",
     "0BSD", "BSD-1-Clause", "BSD-2-Clause", "BSD-3-Clause",
     # Permissive BSD variants; BSD-4-Clause (advertising clause) stays out.
     "BSD-2-Clause-Patent", "BSD-3-Clause-Clear", "BSD-3-Clause-LBNL",
+    # Notice-only licences: keep the notice, no other obligation.
+    "curl", "blessing", "Zlib", "PSF-2.0", "PostgreSQL", "BSL-1.0", "CC-BY-4.0",
 }
 APPROVED_EXCEPTIONS = {"LLVM-exception"}
 LICENCE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]*\+?$")
@@ -56,6 +75,7 @@ MANIFESTS = {
 }
 MANIFEST_PATTERNS = re.compile(r"^requirements[-_.].*\.txt$|\.(csproj|fsproj|vbproj|gemspec|cabal)$")
 SKIP_DIRS = {".git", "node_modules", "dist", ".venv", "venv"}
+EXCEPTIONS_FILE = os.path.join("scripts", "licence-exceptions.json")
 
 
 class Unparseable(ValueError):
@@ -193,6 +213,120 @@ def uninitialised_submodules(root="."):
     return missing
 
 
+def normalise(name):
+    """Package names compare case-insensitively, with -, _ and . equivalent
+    (PEP 503); harmless for the other ecosystems."""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def walk_files(root, names):
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        for f in filenames:
+            if f in names:
+                yield os.path.join(dirpath, f)
+
+
+def first_party_names(root="."):
+    """Names of the packages this repository itself declares."""
+    names = set()
+    for path in walk_files(root, {"package.json", "pyproject.toml", "Cargo.toml", "go.mod"}):
+        base = os.path.basename(path)
+        try:
+            if base == "package.json":
+                with open(path, encoding="utf-8") as fh:
+                    name = json.load(fh).get("name")
+            elif base == "go.mod":
+                with open(path, encoding="utf-8") as fh:
+                    match = re.search(r"^module\s+(\S+)", fh.read(), re.M)
+                name = match.group(1) if match else None
+            else:
+                with open(path, "rb") as fh:
+                    data = tomllib.load(fh)
+                section = "project" if base == "pyproject.toml" else "package"
+                name = data.get(section, {}).get("name")
+        except (OSError, ValueError, tomllib.TOMLDecodeError):
+            continue
+        if name:
+            names.add(normalise(name))
+    return names
+
+
+def uv_dev_only(path):
+    """Packages reachable only through dependency groups in one uv.lock."""
+    with open(path, "rb") as fh:
+        packages = tomllib.load(fh).get("package", [])
+    deps = {}
+    roots = []
+    group_heads = set()
+    for pkg in packages:
+        name = normalise(pkg["name"])
+        edges = {normalise(d["name"]) for d in pkg.get("dependencies", [])}
+        for extra in pkg.get("optional-dependencies", {}).values():
+            edges |= {normalise(d["name"]) for d in extra}
+        deps.setdefault(name, set()).update(edges)
+        source = pkg.get("source", {})
+        if "virtual" in source or "editable" in source:
+            roots.append(name)
+            for group in pkg.get("dev-dependencies", {}).values():
+                group_heads |= {normalise(d["name"]) for d in group}
+
+    def reach(start):
+        seen, stack = set(), list(start)
+        while stack:
+            node = stack.pop()
+            if node not in seen:
+                seen.add(node)
+                stack.extend(deps.get(node, ()))
+        return seen
+
+    shipped = reach(roots)
+    return reach(group_heads) - shipped
+
+
+def dev_only_names(root=".", exceptions=None):
+    names = {normalise(n) for n in (exceptions or {}).get("dev_only", [])}
+    for path in walk_files(root, {"uv.lock"}):
+        names |= uv_dev_only(path)
+    return names
+
+
+def load_exceptions(root="."):
+    path = os.path.join(root, EXCEPTIONS_FILE)
+    if not os.path.isfile(path):
+        return {"components": [], "dev_only": []}
+    with open(path, encoding="utf-8") as fh:
+        data = json.load(fh)
+    for entry in data.get("components", []):
+        if not entry.get("name") or not entry.get("licences") or not entry.get("reason"):
+            raise ValueError("{}: every component needs name, licences and reason".format(path))
+    return data
+
+
+def excepted(name, expr, exceptions):
+    for entry in exceptions.get("components", []):
+        if normalise(entry["name"]) == normalise(name) and expr.strip() in entry["licences"]:
+            return True
+    return False
+
+
+def violations(artifacts, root="."):
+    exceptions = load_exceptions(root)
+    skip = first_party_names(root) | dev_only_names(root, exceptions)
+    bad = set()
+    for art in artifacts:
+        name = art.get("name", "?")
+        if normalise(name) in skip:
+            continue
+        version = art.get("version", "?")
+        entries = art.get("licenses") or []
+        exprs = [e.get("spdxExpression") or e.get("value") or "" for e in entries] or [""]
+        for expr in exprs:
+            if not licence_ok(expr) and not excepted(name, expr, exceptions):
+                bad.add("{}@{}  {}".format(name, version, expr or "(no licence)"))
+    return bad
+
+
 def main() -> int:
     raw = sys.stdin.read().strip()
     if not raw:
@@ -215,17 +349,13 @@ def main() -> int:
             return 1
         print("check-licenses: no dependency manifests and no components - nothing to check")
         return 0
-    bad = set()
-    for art in artifacts:
-        name = art.get("name", "?")
-        version = art.get("version", "?")
-        entries = art.get("licenses") or []
-        exprs = [e.get("spdxExpression") or e.get("value") or "" for e in entries] or [""]
-        for expr in exprs:
-            if not licence_ok(expr):
-                bad.add("{}@{}  {}".format(name, version, expr or "(no licence)"))
+    try:
+        bad = violations(artifacts)
+    except (OSError, ValueError, tomllib.TOMLDecodeError) as err:
+        print("check-licenses: {}".format(err))
+        return 1
     if bad:
-        print("Dependencies outside the licence allowlist (MIT, Apache-2.0, BSD, ISC):")
+        print("Dependencies outside the licence allowlist (see AGENTS.md, licence hygiene):")
         for line in sorted(bad):
             print("  " + line)
         return 1

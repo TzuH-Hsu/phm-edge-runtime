@@ -45,6 +45,7 @@ check: ## Run repo self-consistency scripts (skips scripts not yet added)
 	@if [ -x scripts/check-local-md.sh ]; then scripts/check-local-md.sh; else echo "skip: scripts/check-local-md.sh not present yet"; fi
 	@if [ -x scripts/check-label-forms.sh ]; then scripts/check-label-forms.sh; else echo "skip: scripts/check-label-forms.sh not present yet"; fi
 	@if [ -x scripts/check-node-tests.sh ]; then scripts/check-node-tests.sh; else echo "skip: scripts/check-node-tests.sh not present yet"; fi
+	@if [ -f scripts/test_check_licenses.py ]; then PYTHONDONTWRITEBYTECODE=1 python3 -m unittest -q scripts/test_check_licenses.py; else echo "skip: scripts/test_check_licenses.py not present yet"; fi
 
 lint: lint-docs lint-actions lint-secrets check ## L0 - aggregate all lint/consistency checks
 
@@ -80,13 +81,27 @@ maintenance: ## Everything the weekly maintenance workflow runs (network; not in
 # workflow or action.yml references are CI tooling, not delivered with the
 # product, and carry no licence data. Do not `--exclude './.github/**'` instead:
 # that also drops the npm dependencies of a local action under .github/actions/.
+# Lock files such as pnpm-lock.yaml and uv.lock carry no licence data, so both
+# targets let syft look licences up from the package registries (network).
+# SBOM_IMAGES lists the container images that ship with the product (for
+# example SBOM_IMAGES="ghcr.io/owner/api:1.2.3 nginx:1.30.5-alpine"); `sbom`
+# writes one SPDX file per image. Images are not run through lint-licenses:
+# their OS packages are the system layer, covered by the source offer instead.
+SYFT_ENV := SYFT_JAVASCRIPT_SEARCH_REMOTE_LICENSES=true SYFT_PYTHON_SEARCH_REMOTE_LICENSES=true SYFT_GOLANG_SEARCH_REMOTE_LICENSES=true
+SYFT_CATALOGERS := --select-catalogers '-github-actions-usage-cataloger,-github-action-workflow-usage-cataloger'
+SBOM_IMAGES ?=
 
 lint-licenses: ## Reject copyleft dependencies (GPL/AGPL/LGPL/SSPL/...)
 	@command -v syft >/dev/null 2>&1 || { echo "install: brew install syft"; exit 1; }
-	set -o pipefail; syft dir:. -o json -q --select-catalogers '-github-actions-usage-cataloger,-github-action-workflow-usage-cataloger' | python3 scripts/check-licenses.py
+	set -o pipefail; $(SYFT_ENV) syft dir:. -o json -q $(SYFT_CATALOGERS) | python3 scripts/check-licenses.py
 
-sbom: ## Write SPDX SBOM + readable third-party licence list to dist/
+sbom: ## Write SPDX SBOM + readable third-party licence list to dist/ (repo and SBOM_IMAGES)
 	@command -v syft >/dev/null 2>&1 || { echo "install: brew install syft"; exit 1; }
 	@mkdir -p dist
-	syft dir:. -q --select-catalogers '-github-actions-usage-cataloger,-github-action-workflow-usage-cataloger' -o spdx-json=dist/sbom.spdx.json -o table=dist/third-party-licences.txt
+	$(SYFT_ENV) syft dir:. -q $(SYFT_CATALOGERS) -o spdx-json=dist/sbom.spdx.json -o table=dist/third-party-licences.txt
 	@echo "wrote dist/sbom.spdx.json and dist/third-party-licences.txt"
+	@for img in $(SBOM_IMAGES); do \
+		safe=$$(printf '%s' "$$img" | tr '/:@' '___'); \
+		$(SYFT_ENV) syft "$$img" -q -o spdx-json="dist/sbom-image-$$safe.spdx.json" -o table="dist/third-party-licences-image-$$safe.txt" || exit 1; \
+		echo "wrote dist/sbom-image-$$safe.spdx.json"; \
+	done
