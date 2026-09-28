@@ -5,6 +5,15 @@ github-project-os template, measured against template v0.5.6 on 2026-09-28.
 On a sync, keep these differences; when a new deliberate difference is
 introduced, update this file in the same PR.
 
+The comparison ref is not a normal tag. Fetch it once into its own namespace, so
+template tags never collide with this repository's version tags:
+
+```bash
+git remote add template https://github.com/TzuH-Hsu/github-project-os.git  # once
+git config remote.template.tagOpt --no-tags
+git fetch template '+refs/tags/v0.5.6:refs/template-tags/v0.5.6'
+```
+
 To re-check:
 
 ```bash
@@ -24,7 +33,7 @@ Files every adopter owns. They always differ and are never copied from the templ
 | CHANGELOG.md | release-please-generated history for this repository |
 | LICENSE | Apache-2.0 full text (template ships MIT) — this repo's licence choice |
 | NOTICE | Apache-2.0 attribution plus MIT attribution for the template-derived scaffolding |
-| .release-please-manifest.json | Current released version (0.2.5) |
+| .release-please-manifest.json | This repository's own release version |
 | CONTRIBUTING.md | Tool install table order and one wording tweak; process content matches the template |
 | AGENTS.md project sections | The "Repository policy" section (public-library commit rules) and the runner-variable list |
 | .github/CODEOWNERS | No active owner lines (comment-only example block, plus one added example) |
