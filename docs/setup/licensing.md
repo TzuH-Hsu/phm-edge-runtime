@@ -81,6 +81,11 @@ genuinely ambiguous about what a client is receiving, and a client's counsel
 reads `LICENSE` and nothing else. `NOTICE` is also where licence scanners look,
 which matters when a client runs an open-source audit on delivery.
 
+For the same reason every file under `scripts/` starts with
+`SPDX-License-Identifier: MIT`. Those files are the template's and stay MIT
+inside a relicensed repository, so leave the header as it is; your own source
+files carry your licence.
+
 ## Proprietary notice (the text bootstrap writes)
 
 `__YEAR__` and `__HOLDER__` are substituted with the current year and the

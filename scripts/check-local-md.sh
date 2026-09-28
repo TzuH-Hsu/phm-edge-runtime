@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 # check-local-md.sh — local-file hygiene check.
 #
 # Verifies:

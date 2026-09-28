@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 'use strict';
 // pr-lint.test.js — exercises scripts/pr-lint.js under plain node.
 // Run by scripts/check-node-tests.sh from `make check`.
@@ -57,6 +58,66 @@ test('a closing keyword inside an HTML comment, a fenced block or inline code do
   assert.deepEqual(numbers('``Closes #15``'), []);
   assert.deepEqual(numbers('`` `Closes #16` `` and Closes #17'), [17]);
   assert.deepEqual(numbers('```Closes #18``` Closes #19'), [19]);
+  // CRLF bodies: both fence characters close (GitHub normalises line endings)
+  assert.deepEqual(numbers('~~~\r\nCloses #20\r\n~~~\r\n\r\nCloses #21'), [21]);
+  assert.deepEqual(numbers('```\r\nCloses #22\r\n```\r\n\r\nCloses #23'), [23]);
+  // a fence inside a blockquote is code; a plain quoted line is still prose
+  assert.deepEqual(numbers('> ~~~\n> Closes #24\n> ~~~\nCloses #25'), [25]);
+  assert.deepEqual(numbers('> Closes #26'), [26]);
+  // an indented code block is code; the same indentation continuing a list item or a paragraph is prose
+  assert.deepEqual(numbers('Summary\n\n    Closes #27\n'), []);
+  assert.deepEqual(numbers('    Closes #28'), []);
+  assert.deepEqual(numbers('Summary\n\n\tCloses #29'), []);
+  assert.deepEqual(numbers('- item\n\n    Closes #30'), [30]);
+  assert.deepEqual(numbers('1. item\n\n    Closes #31'), [31]);
+  assert.deepEqual(numbers('text\n    Closes #32'), [32]);
+  assert.deepEqual(numbers('- item\n\nparagraph\n\n    Closes #33'), []); // the paragraph ended the list
+  assert.deepEqual(numbers('    code\n\n    Closes #34\nCloses #35'), [35]); // one indented block across a blank line
+  // a quoted fence ends with its quote; the unquoted ``` after it opens a new fence
+  assert.deepEqual(numbers('> ```\n> Closes #36\n```\nCloses #37'), []);
+  assert.deepEqual(numbers('> ```\n> Closes #38\n\nCloses #39'), [39]);
+  // inside a top-level fence, a quoted ``` line is content, not the closing fence
+  assert.deepEqual(numbers('```\n> ```\nCloses #40\n```\nCloses #41'), [41]);
+  // indentation is measured from the list item's content column
+  assert.deepEqual(numbers('- item\n\n        Closes #42'), []);
+  assert.deepEqual(numbers('1. item\n\n       Closes #43'), []);
+  assert.deepEqual(numbers('10. item\n\n    Closes #44'), [44]); // content column 4: still the item's prose
+  // tabs expand to 4-column stops
+  assert.deepEqual(numbers('Summary\n\n \tCloses #45'), []);
+  assert.deepEqual(numbers('Summary\n\n  \tCloses #46'), []);
+  assert.deepEqual(numbers('- item\n\n\tCloses #47'), [47]); // tab to column 4 = item content column 2 + 2
+  // only an open paragraph stops indented code: after a comment block or a fence, it is code
+  assert.deepEqual(numbers('<!-- x -->\n    Closes #48'), []);
+  assert.deepEqual(numbers('```\nx\n```\n    Closes #49'), []);
+  assert.deepEqual(numbers('# Heading\n    Closes #50'), []);
+  // nested lists: when the inner list ends, the outer item's column applies again
+  assert.deepEqual(numbers('- outer\n  - inner\n\n  text\n\n    Closes #51'), [51]);
+  assert.deepEqual(numbers('- outer\n  - inner\n\n        Closes #52'), []); // inner content column 4 + 4
+  // a fence interrupting a list item's paragraph at column 0 ends the list, so its lines are measured from column 0
+  assert.deepEqual(numbers('- item\n```\nCloses #53\n```\nCloses #54'), [54]);
+  // a tab after the marker reaches the next tab stop: content column 4, so six spaces continue the item
+  assert.deepEqual(numbers('-\titem\n\n      Closes #55'), [55]);
+  // more than 4 columns after the marker: one is padding, the rest makes the item's first line code
+  assert.deepEqual(numbers('-     Closes #56'), []);
+  assert.deepEqual(numbers('-    Closes #57'), [57]); // exactly 4: ordinary padding
+  // an ordered marker other than 1 cannot interrupt a paragraph, so no list opens and the indented line is code
+  assert.deepEqual(numbers('text\n2. item\n\n    Closes #58'), []);
+  assert.deepEqual(numbers('text\n1. item\n\n    Closes #59'), [59]);
+  assert.deepEqual(numbers('2. item\n\n    Closes #60'), [60]); // no paragraph open: 2. starts a list
+  // a tab after `>` gives one column of padding; the rest of it is not enough to make code
+  assert.deepEqual(numbers('>\tCloses #61'), [61]);
+  assert.deepEqual(numbers('> \tCloses #62'), [62]); // space padding, then a tab to column 4: 2 columns of indent
+  // an invalid backtick fence (backtick in the info string) is paragraph text: it continues the item, the list stays open
+  assert.deepEqual(numbers('- item\n```bad`\n\n    Closes #63'), [63]);
+  // a quote inside a list item: after the quote, the item's content column applies again
+  assert.deepEqual(numbers('- item\n  > quote\n\n    Closes #64'), [64]);
+  assert.deepEqual(numbers('- item\n> quote\n\n    Closes #65'), []); // quote at column 0 ends the list: top-level code
+  // the same one level down: a list inside a quote survives a nested quote
+  assert.deepEqual(numbers('> - item\n>   > nested\n>\n>     Closes #66'), [66]);
+  // a lazy continuation (no `>`) keeps the quote and its list open
+  assert.deepEqual(numbers('> - item\n>   text\nlazy continuation\n>\n>     Closes #67'), [67]);
+  // marker padding may mix spaces and tabs: "- \t" reaches column 4
+  assert.deepEqual(numbers('- \titem\n\n      Closes #69'), [69]);
 });
 
 test('all GitHub closing keywords, the colon form and the full URL form are recognised, case-insensitively', () => {
@@ -122,13 +183,24 @@ test('run: fails with every problem listed, verifies the issue exists and is not
   assert.equal(out[0][0], 'failed');
   assert.match(out[0][1], /^PR lint failed:\n- branch .*\n- body links no issue/s);
   out.length = 0;
-  const gh = (issue) => ({ rest: { issues: { get: async () => { if (issue === 404 || issue === 403) { const e = new Error(issue === 404 ? 'Not Found' : 'Resource not accessible by integration'); e.status = issue; throw e; } if (issue === 'boom') throw new Error('boom'); return { data: issue }; } } } });
+  const gh = (issue) => ({ rest: { issues: { get: async () => { if (issue === 404 || issue === 403 || issue === 410) { const e = new Error({ 404: 'Not Found', 403: 'Resource not accessible by integration', 410: 'This issue was deleted' }[issue]); e.status = issue; throw e; } if (issue === 'boom') throw new Error('boom'); return { data: issue }; } } } });
   const ctx = (ref, body) => ({ repo: { owner: 'o', repo: 'r' }, payload: { pull_request: { head: { ref }, body } } });
   await run({ github: gh({ number: 42, state: 'open' }), context: ctx('fix/42-x', GOOD_BODY + 'Closes o/r#42\n'), core });
   assert.deepEqual(out, [['info', 'PR lint passed: branch issue #42, body closes #42']]); // o/r#42 is this repo → local
   out.length = 0;
   await run({ github: gh(404), context: ctx('fix/999999-x', 'Closes #999999'), core });
   assert.match(out[0][1], /issue #999999 does not exist/);
+  out.length = 0;
+  await run({ github: gh(410), context: ctx('fix/22-x', 'Closes #22'), core });
+  assert.equal(out[0][0], 'failed');
+  assert.match(out[0][1], /issue #22 was deleted/);
+  out.length = 0;
+  // a closed PR is not linted at all — no API call, no failure
+  let called = false;
+  const spy = { rest: { issues: { get: async () => { called = true; return { data: {} }; } } } };
+  await run({ github: spy, context: { repo: { owner: 'o', repo: 'r' }, payload: { pull_request: { number: 23, state: 'closed', head: { ref: 'nope' }, body: 'Closes #22' } } }, core });
+  assert.deepEqual(out, [['info', 'PR lint skipped: pull request #23 is closed']]);
+  assert.equal(called, false);
   out.length = 0;
   await run({ github: gh({ number: 42, pull_request: { url: 'x' } }), context: ctx('fix/42-x', GOOD_BODY), core });
   assert.match(out[0][1], /#42 is a pull request, not an issue/);

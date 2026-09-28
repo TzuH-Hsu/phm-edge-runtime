@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 # check-label-forms.sh — label values repeated outside .github/labels.yml
 # must still match it.
 #
