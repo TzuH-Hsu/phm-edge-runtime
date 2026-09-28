@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.5...v0.2.6) (2026-09-28)
+
+
+### Bug Fixes
+
+* take the template's v0.5.7 pr-lint fixes and SPDX headers ([#43](https://github.com/TzuH-Hsu/phm-edge-runtime/issues/43)) ([0de1afe](https://github.com/TzuH-Hsu/phm-edge-runtime/commit/0de1afefc8fcb1e52184c8ce2f11c6c054e0a4ce))
+
 ## [0.2.5](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.4...v0.2.5) (2026-09-26)
 
 
