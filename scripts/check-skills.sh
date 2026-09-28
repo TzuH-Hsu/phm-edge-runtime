@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 # check-skills.sh — skills consistency check.
 #
 # Verifies:

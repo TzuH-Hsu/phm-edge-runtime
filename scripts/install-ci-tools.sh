@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 # Install checksum-verified release binaries used by the make lint targets.
 #
 # This exists because ci.yml and maintenance.yml both need these tools, and the

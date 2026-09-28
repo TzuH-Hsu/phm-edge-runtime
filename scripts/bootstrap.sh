@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 # bootstrap.sh — one-time (and re-runnable) setup for a repo created from the
 # "GitHub Project OS" template. Applies everything a template can't ship as
 # files: labels, milestone, GitHub Project fields, repo settings, ruleset,

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 # Detect drift between the CI tool version pins and their upstream releases.
 #
 # Why this exists: none of these five tools live in a manifest Dependabot can

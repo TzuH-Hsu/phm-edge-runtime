@@ -1,7 +1,7 @@
 # Template drift
 
 This file lists every place this repository deliberately differs from the
-github-project-os template, measured against template v0.5.6 on 2026-09-28.
+github-project-os template, measured against template v0.5.7 on 2026-09-28 (re-baselined from v0.5.6 when v0.5.7 was taken).
 On a sync, keep these differences; when a new deliberate difference is
 introduced, update this file in the same PR.
 
@@ -11,14 +11,14 @@ template tags never collide with this repository's version tags:
 ```bash
 git remote add template https://github.com/TzuH-Hsu/github-project-os.git  # once
 git config remote.template.tagOpt --no-tags
-git fetch template '+refs/tags/v0.5.6:refs/template-tags/v0.5.6'
+git fetch template '+refs/tags/v0.5.7:refs/template-tags/v0.5.7'
 ```
 
 To re-check:
 
 ```bash
-git diff refs/template-tags/v0.5.6 HEAD -- <file>
-git ls-tree -r --name-only refs/template-tags/v0.5.6 > /tmp/template-files.txt
+git diff refs/template-tags/v0.5.7 HEAD -- <file>
+git ls-tree -r --name-only refs/template-tags/v0.5.7 > /tmp/template-files.txt
 git ls-tree -r --name-only HEAD > /tmp/repo-files.txt
 diff /tmp/template-files.txt /tmp/repo-files.txt
 ```
@@ -97,6 +97,7 @@ Repo-only files under .github/, scripts/, skills/, docs/setup/, docs/adr/ and Ma
 | scripts/test_check_licenses.py | Unit tests for `scripts/check-licenses.py`, run by `make check` | #37 |
 | Makefile `lint-licenses` | Runs `scripts/check-licenses.py` against the repo tree and every image in `SBOM_IMAGES` | #23 |
 | Makefile `sbom` | Writes an SPDX SBOM and the third-party licence list to `dist/` | bootstrap |
+| docs/template-drift.md | This inventory of deliberate differences from the template | #41 |
 
 ## Local rules that conflict with kit files
 
@@ -104,7 +105,7 @@ Local rules that the byte-identical kit files do not follow, kept that way on pu
 
 | Rule | Where it is stated | Kit files affected | Why not patched locally |
 | --- | --- | --- | --- |
-| Every source file starts with `SPDX-License-Identifier: Apache-2.0` | AGENTS.md, "Repository policy" | `scripts/issue-labeler.js`, `scripts/pr-lint.js`, `scripts/check-label-forms.sh`, `scripts/check-node-tests.sh` and their tests carry no SPDX header | These files are meant to stay byte-identical with upstream for whole-file replacement on sync; patching a header would create a permanent diff against every future template release |
+| Every source file starts with `SPDX-License-Identifier: Apache-2.0` | AGENTS.md, "Repository policy" | Kit scripts under `scripts/` (from template v0.5.7 they carry `SPDX-License-Identifier: MIT`) | Resolved upstream in v0.5.7: the kit scripts are MIT-licensed template scaffolding (see NOTICE), so an MIT identifier is the correct header and they stay byte-identical. The rule's wording names Apache-2.0 because it is written for this library's own source |
 
 ## Updating this file
 

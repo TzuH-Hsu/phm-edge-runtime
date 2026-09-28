@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
 # check-node-tests.sh — runs every scripts/*.test.js under plain node.
 #
 # The logic behind the event-driven workflows lives in scripts/*.js

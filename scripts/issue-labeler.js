@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 'use strict';
 // issue-labeler.js — the logic behind .github/workflows/issue-labeler.yml.
 //

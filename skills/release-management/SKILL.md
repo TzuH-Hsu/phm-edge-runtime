@@ -82,6 +82,8 @@ gh release edit v0.2.0 --notes "TLDR: ...\n\n$(gh release view v0.2.0 --json bod
 
   Select by commit, workflow and status rather than by branch name — on a public repository a fork PR can share the predictable `release-please--branches--main` branch name, and approving *its* run would leave the release PR still parked.
 
+  This is observed, not assumed. Reviewers, human and automated, keep asserting that a `GITHUB_TOKEN`-opened PR gets no run at all, or that approval applies only to fork PRs. In practice the run is created with zero jobs and conclusion `action_required`, and the approve call releases it. That held for every release PR of this template (each shows a first attempt `action_required`, then a successful attempt after approval) and for 18 approvals across six adopter repositories.
+
   The alternative is to run release-please with a Personal Access Token that can trigger workflows, at the cost of managing that token. Do not push an empty commit to the release branch to wake CI — it lands in the release commit's history for nothing.
 
 ## Related

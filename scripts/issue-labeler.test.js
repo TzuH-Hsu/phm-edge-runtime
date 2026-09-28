@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 'use strict';
 // issue-labeler.test.js — exercises scripts/issue-labeler.js under plain node.
 // Run by scripts/check-node-tests.sh from `make check`. No dependencies:
