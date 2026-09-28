@@ -105,7 +105,7 @@ Local rules that the byte-identical kit files do not follow, kept that way on pu
 
 | Rule | Where it is stated | Kit files affected | Why not patched locally |
 | --- | --- | --- | --- |
-| Every source file starts with `SPDX-License-Identifier: Apache-2.0` | AGENTS.md, "Repository policy" | Kit scripts under `scripts/` (from template v0.5.7 they carry `SPDX-License-Identifier: MIT`) | Resolved upstream in v0.5.7: the kit scripts are MIT-licensed template scaffolding (see NOTICE), so an MIT identifier is the correct header and they stay byte-identical. The rule's wording names Apache-2.0 because it is written for this library's own source |
+| Every source file starts with an SPDX identifier | AGENTS.md, "Repository policy" | Kit scripts under `scripts/` | No longer a conflict: from template v0.5.7 the kit scripts carry `SPDX-License-Identifier: MIT`, and the rule says template scripts keep that identifier while this library's own code uses Apache-2.0. Row kept so a sync does not re-stamp them |
 
 ## Updating this file
 
