@@ -44,8 +44,8 @@ Three kinds of component are not judged against the allowlist:
 
 syft reports the SHA-256 of a file it found by name but could not match to a
 licence. Where every such file is plainly not a licence text (a file named
-NOTICE*, such as NOTICE.txt or notice_response.go, or a file under .github/,
-such as .github/workflows/license_check.yml) the entry is dropped; any other
+NOTICE*, such as NOTICE.txt or notice_response.go, or a workflow file under
+.github/workflows/, such as .github/workflows/license_check.yml) the entry is dropped; any other
 unmatched file, LICENSE.json or COPYING.py included, still fails.
 
 A component whose registry metadata carries no usable licence (only a
@@ -128,9 +128,10 @@ RESTRICTED_SERVICE = re.compile(r"^(AGPL|SSPL|BUSL|Elastic|RSAL|Timescale|Licens
 EXCEPTIONS_FILE = os.path.join("scripts", "licence-exceptions.json")
 # Files that syft's licence-file name match picks up but that hold no licence
 # terms: files named NOTICE* (attribution, or source such as
-# notice_response.go) and GitHub CI configuration under .github/. Anything
-# else, LICENSE.json included, is still judged.
-NOT_LICENCE_TEXT = re.compile(r"(^|/)notice[^/]*$|(^|/)\.github/", re.I)
+# notice_response.go) and GitHub workflow files under .github/workflows/.
+# Anything else, LICENSE.json and a licence file elsewhere under .github/
+# included, is still judged.
+NOT_LICENCE_TEXT = re.compile(r"(^|/)notice[^/]*$|(^|/)\.github/workflows/", re.I)
 
 
 class Unparseable(ValueError):
@@ -625,8 +626,15 @@ def load_exceptions(root="."):
 
 
 def image_repository(name):
-    """An image repository name as Docker Hub references are written short:
-    docker.io/library/postgres and postgres are the same repository."""
+    """The repository of an image reference, without its tag or digest and
+    with Docker Hub written short: docker.io/library/postgres:18@sha256:...
+    and postgres are the same repository. A registry port (host:5000/repo)
+    is kept, since its colon comes before the last slash."""
+    if not name:
+        return name
+    name = name.split("@", 1)[0]
+    if name.rfind(":") > name.rfind("/"):
+        name = name[:name.rfind(":")]
     for prefix in ("docker.io/library/", "docker.io/", "index.docker.io/library/", "index.docker.io/"):
         if name and name.startswith(prefix):
             return name[len(prefix):]

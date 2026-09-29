@@ -566,11 +566,14 @@ class ImageScopedExceptionTest(RepoCase):
         self.raft = art("github.com/hashicorp/raft", "MPL-2.0", kind="go-module")
 
     def test_exception_applies_in_a_scan_of_the_listed_image(self):
-        for name in ("chrislusf/seaweedfs", "docker.io/chrislusf/seaweedfs"):
+        for name in ("chrislusf/seaweedfs", "docker.io/chrislusf/seaweedfs", "chrislusf/seaweedfs:4.47",
+                     "docker.io/chrislusf/seaweedfs@sha256:" + "0" * 64,
+                     "chrislusf/seaweedfs:4.47@sha256:" + "0" * 64):
             self.assertEqual(self.bad(self.raft, image=True, image_name=name), set(), name)
 
     def test_exception_does_not_apply_to_another_image(self):
-        self.assertTrue(self.bad(self.raft, image=True, image_name="phm-platform/backend"))
+        for name in ("phm-platform/backend", "registry.example:5000/chrislusf/seaweedfs:4.47"):
+            self.assertTrue(self.bad(self.raft, image=True, image_name=name), name)
 
     def test_exception_does_not_apply_outside_an_image_scan(self):
         self.assertTrue(self.bad(self.raft))
@@ -606,7 +609,8 @@ class UnmatchedLicenceFileTest(RepoCase):
                                               hashed(".github/workflows/license_check.yml"))), set())
 
     def test_hash_of_an_unmatched_licence_file_fails(self):
-        for path in ("LICENSE", "COPYING", "LICENSE.md", "LICENSE.json", "COPYING.py", "licenses/custom.go"):
+        for path in ("LICENSE", "COPYING", "LICENSE.md", "LICENSE.json", "COPYING.py", "licenses/custom.go",
+                     ".github/LICENSE", ".github/actions/foo/LICENSE"):
             self.assertTrue(self.bad(self.module(hashed(path))), path)
 
     def test_hash_without_a_source_file_fails(self):
