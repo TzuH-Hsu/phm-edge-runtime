@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.6...v0.2.7) (2026-09-29)
+
+
+### Bug Fixes
+
+* take the template's v0.6.0 pr-lint and AGENTS.md changes ([#46](https://github.com/TzuH-Hsu/phm-edge-runtime/issues/46)) ([f5bcb40](https://github.com/TzuH-Hsu/phm-edge-runtime/commit/f5bcb40d664ef598a93ce85fe5186eab3f56aeaf))
+
 ## [0.2.6](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.5...v0.2.6) (2026-09-28)
 
 
