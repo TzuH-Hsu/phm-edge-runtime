@@ -48,6 +48,7 @@ pinned_version() {
 
 place_binary() {
   local found="$1" binary="$2"
+  mkdir -p "$INSTALL_DIR" 2>/dev/null || sudo mkdir -p "$INSTALL_DIR"
   if [ -w "$INSTALL_DIR" ]; then
     install -m 0755 "$found" "${INSTALL_DIR}/${binary}"
   else
