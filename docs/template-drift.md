@@ -89,6 +89,7 @@ Files in the template that this repo does not have.
 | skills/labels-and-taxonomy/SKILL.md | Notes that this repo's older bootstrap phase 2 does not flag the coarse-Type-fallback-on-an-org-repo mistake, unlike upstream's | This repo's `scripts/bootstrap.sh` predates that phase-2 check | #18 |
 | .github/workflows/ci.yml "Install CI tools" step | Runs a bare `make ci-tools` | The tool list lives in the Makefile (`CI_TOOLS`), so a tool this repository adds needs no YAML change | #48 |
 | Makefile `lint` and `ci-tools` | `lint-licenses` added to `lint`; `ci-tools` installs `CI_TOOLS` by default and sends `EXTRA_CI_TOOLS` (syft) to `scripts/install-extra-tools.sh` | The licence check runs in CI with a pinned syft while `scripts/install-ci-tools.sh` stays identical to the template | #48 |
+| CONTRIBUTING.md tool-install table | Adds a `syft` row | `make lint` now runs `lint-licenses`, which needs syft | #48 |
 
 ## Local additions in template directories
 

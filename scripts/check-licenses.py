@@ -45,7 +45,8 @@ Three kinds of component are not judged against the allowlist:
 syft reports the SHA-256 of a file it found by name but could not match to a
 licence. Where every such file is plainly not a licence text (a file named
 NOTICE*, such as NOTICE.txt or notice_response.go, or a workflow file under
-.github/workflows/, such as .github/workflows/license_check.yml) the entry is dropped; any other
+.github/workflows/, such as .github/workflows/license_check.yml, that is not
+itself named LICENSE, COPYING or the like) the entry is dropped; any other
 unmatched file, LICENSE.json or COPYING.py included, still fails.
 
 A component whose registry metadata carries no usable licence (only a
@@ -129,9 +130,11 @@ EXCEPTIONS_FILE = os.path.join("scripts", "licence-exceptions.json")
 # Files that syft's licence-file name match picks up but that hold no licence
 # terms: files named NOTICE* (attribution, or source such as
 # notice_response.go) and GitHub workflow files under .github/workflows/.
-# Anything else, LICENSE.json and a licence file elsewhere under .github/
-# included, is still judged.
+# A file named like a licence (LICENSE, LICENCE, COPYING, UNLICENSE, with or
+# without an extension) is always judged, wherever it sits; so is anything
+# else, such as LICENSE.json or a licence file elsewhere under .github/.
 NOT_LICENCE_TEXT = re.compile(r"(^|/)notice[^/]*$|(^|/)\.github/workflows/", re.I)
+LICENCE_FILE_NAME = re.compile(r"(^|/)(licen[cs]e|copying|unlicen[cs]e)(\.[^/]*)?$", re.I)
 
 
 class Unparseable(ValueError):
@@ -664,7 +667,8 @@ def reported_licences(art):
         expr = entry.get("spdxExpression") or entry.get("value") or ""
         sources = [url.rsplit("#", 1)[-1] for url in entry.get("urls") or []]
         sources += [loc.get("path", "") for loc in entry.get("locations") or [] if isinstance(loc, dict)]
-        if expr.startswith("sha256:") and sources and all(NOT_LICENCE_TEXT.search(s) for s in sources):
+        if expr.startswith("sha256:") and sources and all(
+                NOT_LICENCE_TEXT.search(s) and not LICENCE_FILE_NAME.search(s) for s in sources):
             continue
         exprs.append(expr)
     return exprs or [""]

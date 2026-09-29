@@ -610,7 +610,8 @@ class UnmatchedLicenceFileTest(RepoCase):
 
     def test_hash_of_an_unmatched_licence_file_fails(self):
         for path in ("LICENSE", "COPYING", "LICENSE.md", "LICENSE.json", "COPYING.py", "licenses/custom.go",
-                     ".github/LICENSE", ".github/actions/foo/LICENSE"):
+                     ".github/LICENSE", ".github/actions/foo/LICENSE", ".github/workflows/LICENSE",
+                     ".github/workflows/COPYING", ".github/workflows/LICENSE.txt"):
             self.assertTrue(self.bad(self.module(hashed(path))), path)
 
     def test_hash_without_a_source_file_fails(self):
