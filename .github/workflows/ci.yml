@@ -23,8 +23,9 @@ on:
   pull_request:
     # A SUPERSET of the defaults (opened, synchronize, reopened). `edited` and
     # `ready_for_review` are added so a PR that failed the lint on its body or
-    # title turns green when the author fixes it, without a push — "Re-run
-    # jobs" replays the ORIGINAL payload and would judge the old body.
+    # title turns green when the author fixes it, without a push. (The lint
+    # reads which issues the PR closes live from GitHub, so "Re-run jobs" also
+    # re-checks the current body; the branch name still comes from the payload.)
     # `labeled` is added because release-please applies `autorelease: pending`
     # AFTER opening the PR; with a PAT-authored release PR that label is what
     # exempts it. Never narrow this list: a `types:` without the three

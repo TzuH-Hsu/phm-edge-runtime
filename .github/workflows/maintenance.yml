@@ -23,7 +23,12 @@ jobs:
     # in seconds and bills as one rounded-up minute either way, so a smaller
     # runner saves nothing. Override with the repository variable below.
     runs-on: ${{ fromJSON(vars.MAINTENANCE_RUNNER_LABELS || '["ubuntu-latest"]') }}
-    timeout-minutes: 10
+    # 30, not 10: `make check-tool-versions` looks each pin up in turn with a
+    # 90 s fetch limit — the five kit tools plus any adopter rows in
+    # scripts/tool-pins.extra — so a slow registry day must still end in the
+    # script's own ERROR report, not in the job being cancelled first. A normal
+    # run takes about a minute; this weekly job costs nothing extra to allow.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -52,7 +57,7 @@ jobs:
       # and it is three GitHub API calls plus two registry fetches per week.
       - name: Run maintenance checks
         env:
-          # Lets check-tool-versions.sh use `gh` (1,000 req/hr per repo) rather
+          # Lets check-tool-versions.sh authenticate its GitHub lookups (1,000 req/hr per repo) rather
           # than the shared unauthenticated 60/hr-per-IP pool. Read-only public
           # metadata; the job keeps its top-level `contents: read` permission.
           GH_TOKEN: ${{ github.token }}

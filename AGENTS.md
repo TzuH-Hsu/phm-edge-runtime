@@ -18,6 +18,8 @@ Agent-specific entry files (`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructi
 
 The Makefile is the only executable contract in this repository. CI calls make targets; customize the Makefile, never the workflows. One exception, which puts no adopter values in the YAML: event handlers that need the token or payload, whose logic lives in `scripts/*.js` behind a thin `github-script` caller and is tested by `make check` (the issue labeler, the PR lint; ADR-0008). The other thing the Makefile cannot own is runner selection, which GitHub resolves before any make target exists — set the per-workflow repository variables (`CI_RUNNER_LABELS` (ci.yml), `AUTOMATION_RUNNER_LABELS` (issue-labeler.yml), `MAINTENANCE_RUNNER_LABELS` (maintenance.yml), `RELEASE_RUNNER_LABELS` (release-please.yml)) instead of editing `runs-on`; see `docs/setup/runners.md`.
 
+If this repository deliberately differs from the template it was created from, record each difference in `docs/template-drift.md` — the file, what differs, why — and update it in the PR that adds or removes one. A template sync preserves what that list names. (The template itself has no such file.)
+
 | Level | Name | Command | When required |
 | --- | --- | --- | --- |
 | L0 | static | `make lint` | every PR |
@@ -47,7 +49,7 @@ The Makefile is the only executable contract in this repository. CI calls make t
 1. **Issue** — created via issue forms; native type (Bug/Feature/Task) is set by the form; labels for priority/area follow `.github/PROJECT_FIELDS.md`.
 2. **Branch** — `<type>/<issue#>-<slug>`; the type is one of the Conventional Commit types this repository uses: `feat`, `fix`, `docs`, `chore`, `refactor`, `ci`, `test`, `perf` (this line is the one home for that list — `scripts/pr-lint.js` enforces it on the branch and its test asserts equality).
 3. **Commits** — Conventional Commits, English, imperative (`feat: add label sync phase to bootstrap`).
-4. **PR** — English title in Conventional Commit format; body follows the PR template: summary, linked issue (`Closes #N`), validation ladder checkboxes, `RISK:` lines, rollback notes. CI fails the PR when the branch name or the `Closes #N` line is missing or malformed (`scripts/pr-lint.js`).
+4. **PR** — English title in Conventional Commit format; body follows the PR template: summary, linked issue (`Closes #N`), validation ladder checkboxes, `RISK:` lines, rollback notes. CI fails the PR when the branch name is malformed, or when GitHub reports that the PR does not close exactly one open issue in this repository — the branch's (`scripts/pr-lint.js` asks GitHub which issues the body closes, so a `Closes` line inside code does not count, and neither does an issue linked only in the sidebar — changing that link re-runs no check).
 5. **Merge** — squash merge; the PR title becomes the commit message on `main`.
 
 ## AI agent conventions
