@@ -376,14 +376,17 @@ def uv_closures(path, versions):
 def dev_only_names(root="."):
     """Python packages that this repository's uv dependency groups pull in and
     that nothing shipped does, submodules and vendored code included."""
-    shipped, dev, versions = set(), set(), {}
+    shipped, dev = set(), set()
     own = set(walk_files(root, {"uv.lock"}))
     for path in walk_files(root, {"uv.lock"}, nested=True):
+        versions = {}
         lock_shipped, lock_dev = uv_closures(path, versions)
         shipped |= lock_shipped
         if path in own:
-            dev |= lock_dev
-    return {identity("python", n) + (v,) for n in dev - shipped for v in versions.get(n, {None})}
+            # Versions from this lock only: another lock's version of the same
+            # name is not what this repository's development groups pull in.
+            dev |= {(n, v) for n in lock_dev for v in versions.get(n, {None})}
+    return {identity("python", n) + (v,) for n, v in dev if n not in shipped}
 
 
 PNPM_LOCKFILE_MAJOR = "9"

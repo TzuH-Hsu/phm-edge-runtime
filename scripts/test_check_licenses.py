@@ -542,6 +542,27 @@ source = { registry = "https://pypi.org/simple" }
 """)
         self.assertTrue(self.bad(art("certifi", "MPL-2.0")))
 
+    def test_dev_version_from_the_own_lock_does_not_cover_a_nested_lock_version(self):
+        self.write("backend/uv.lock", UV_LOCK)
+        self.write("vendor/lib/uv.lock", """
+version = 1
+
+[[package]]
+name = "lib"
+version = "0.1.0"
+source = { virtual = "." }
+
+[package.dev-dependencies]
+dev = [{ name = "certifi" }]
+
+[[package]]
+name = "certifi"
+version = "2.0"
+source = { registry = "https://pypi.org/simple" }
+""")
+        self.assertEqual(self.bad(art("certifi", "MPL-2.0", version="1.0")), set())
+        self.assertTrue(self.bad(art("certifi", "MPL-2.0", version="2.0")))
+
 
 
 class ImageOsPackageTest(RepoCase):
