@@ -38,7 +38,7 @@ human reviewer and for an agent reviewing another agent's work.
 
    No level that applies to the change may simply be absent from both the checkbox
    list and the RISK lines.
-5. Use `Closes #N` to link the issue — one issue per PR, and every PR closes one: work that spans several PRs gets a sub-issue per PR, never a `Refs #N` PR that leaves the parent open. CI fails the PR when the body links no issue in this repository, links more than one, or the branch's issue number differs (`scripts/pr-lint.js`). Don't bundle unrelated
+5. Use `Closes #N` to link the issue — one issue per PR, and every PR closes one: work that spans several PRs gets a sub-issue per PR, never a `Refs #N` PR that leaves the parent open. CI fails the PR when it closes no issue in this repository, more than one, or not the branch's — as GitHub itself reports it for the body, so a `Closes` line inside code or an HTML comment does not count, and neither does an issue linked only in the PR's sidebar, since changing that link re-runs no check (`scripts/pr-lint.js`). Don't bundle unrelated
    changes just because they happened to be worked on together.
 6. Re-run `make verify` after every revision to the PR, not just before the first
    push. A review comment that changes code invalidates the previous green run.
