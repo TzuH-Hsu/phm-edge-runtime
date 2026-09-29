@@ -1,11 +1,13 @@
 # GitHub Project OS - make-target contract: CI workflows call these targets
 # and never contain logic of their own. L0 = lint (lint-docs, lint-actions,
-# lint-secrets, check). L1 = test. verify = L0+L1 (canonical pre-PR gate).
+# lint-secrets, lint-licenses, check). L1 = test. verify = L0+L1 (canonical pre-PR gate).
 # maintenance = lint-docs-external + check-tool-versions, the weekly drift
 # detectors. It runs both and aggregates their exit status, so the workflow step
 # stays a bare `make maintenance` and the job's combined failure behaviour is
 # reproducible locally. All three are intentionally excluded from
-# lint/verify/ci-pr: they make external network calls, and CI-PR stays offline.
+# lint/verify/ci-pr: they make external network calls. The one network call in
+# `lint` is `lint-licenses`, which reads licences from the package registries
+# because lock files carry none.
 # CHANGELOG.md is excluded from markdownlint: release-please generates it.
 # Customize tool invocations HERE, not in .github/workflows/*.
 
@@ -47,7 +49,7 @@ check: ## Run repo self-consistency scripts (skips scripts not yet added)
 	@if [ -x scripts/check-node-tests.sh ]; then scripts/check-node-tests.sh; else echo "skip: scripts/check-node-tests.sh not present yet"; fi
 	@if [ -f scripts/test_check_licenses.py ]; then PYTHONDONTWRITEBYTECODE=1 python3 -m unittest -q scripts/test_check_licenses.py; else echo "skip: scripts/test_check_licenses.py not present yet"; fi
 
-lint: lint-docs lint-actions lint-secrets check ## L0 - aggregate all lint/consistency checks
+lint: lint-docs lint-actions lint-secrets lint-licenses check ## L0 - aggregate all lint/consistency checks
 
 test: ## L1 - placeholder test suite (adopters wire real tests here)
 	@echo "============================================================"
@@ -60,9 +62,18 @@ verify: lint test ## L0+L1 - canonical local pre-PR gate
 
 ci-pr: verify ## Alias of verify; what ci.yml runs
 
-ci-tools: ## Install pinned CI tools (CI only) - TOOLS="actionlint gitleaks lychee"
-	@test -n "$(TOOLS)" || { echo 'usage: make ci-tools TOOLS="actionlint gitleaks lychee"'; exit 1; }
-	scripts/install-ci-tools.sh $(TOOLS)
+# The tools ci.yml installs before `make ci-pr`; maintenance.yml passes its own
+# TOOLS. Kit tools go to the template's scripts/install-ci-tools.sh; the tools
+# this repository adds (EXTRA_CI_TOOLS, pinned in scripts/tool-pins.extra) go to
+# scripts/install-extra-tools.sh, so the kit script stays identical to upstream.
+CI_TOOLS := markdownlint-cli2 yamllint actionlint gitleaks lychee syft
+EXTRA_CI_TOOLS := syft
+TOOLS ?= $(CI_TOOLS)
+
+ci-tools: ## Install pinned CI tools (CI only) - default CI_TOOLS, or TOOLS="lychee"
+	@kit="$(filter-out $(EXTRA_CI_TOOLS),$(TOOLS))"; extra="$(filter $(EXTRA_CI_TOOLS),$(TOOLS))"; \
+	if [ -n "$$kit" ]; then scripts/install-ci-tools.sh $$kit; fi; \
+	if [ -n "$$extra" ]; then scripts/install-extra-tools.sh $$extra; fi
 
 check-tool-versions: ## Compare CI tool pins against upstream (weekly maintenance; makes network calls)
 	scripts/check-tool-versions.sh
@@ -74,9 +85,8 @@ maintenance: ## Everything the weekly maintenance workflow runs (network; not in
 	exit $$rc
 
 # --- Licence hygiene and SBOM -------------------------------------------------
-# Not wired into `lint`/`ci-pr` yet: there are no dependencies to scan, and syft
-# is not in the pinned CI tool list. Wire both in (scripts/install-ci-tools.sh +
-# the `lint` aggregate) with the first real dependency.
+# `lint-licenses` is part of `lint`; syft is pinned in scripts/tool-pins.extra
+# and installed by `make ci-tools`.
 # Both targets switch off syft's two GitHub Actions catalogers: the actions a
 # workflow or action.yml references are CI tooling, not delivered with the
 # product, and carry no licence data. Do not `--exclude './.github/**'` instead:

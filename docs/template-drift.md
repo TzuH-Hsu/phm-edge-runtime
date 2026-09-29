@@ -87,6 +87,8 @@ Files in the template that this repo does not have.
 | skills/github-actions-hygiene/SKILL.md | Rule 1 lists the four per-workflow runner variables instead of one `RUNNER_LABELS` | Per-workflow runner-variable split | #18 |
 | skills/issue-writing/SKILL.md | Area example is a generic placeholder (`<area:name — description, exactly as the Area option reads in .github/ISSUE_TEMPLATE/task.yml>`) instead of the template's literal `area:docs`/`area:ci` example | Same placeholder in all six sibling repos: four of them have no `area:docs`/`area:ci`, so the template v0.5.2 sync replaced the example everywhere to keep one patch applicable to all six | #18 |
 | skills/labels-and-taxonomy/SKILL.md | Notes that this repo's older bootstrap phase 2 does not flag the coarse-Type-fallback-on-an-org-repo mistake, unlike upstream's | This repo's `scripts/bootstrap.sh` predates that phase-2 check | #18 |
+| .github/workflows/ci.yml "Install CI tools" step | Runs a bare `make ci-tools` | The tool list lives in the Makefile (`CI_TOOLS`), so a tool this repository adds needs no YAML change | #48 |
+| Makefile `lint` and `ci-tools` | `lint-licenses` added to `lint`; `ci-tools` installs `CI_TOOLS` by default and sends `EXTRA_CI_TOOLS` (syft) to `scripts/install-extra-tools.sh` | The licence check runs in CI with a pinned syft while `scripts/install-ci-tools.sh` stays identical to the template | #48 |
 
 ## Local additions in template directories
 
@@ -101,6 +103,8 @@ Repo-only files under .github/, scripts/, skills/, docs/setup/, docs/adr/ and Ma
 | Makefile `lint-licenses` | Runs `scripts/check-licenses.py` against the repo tree and every image in `SBOM_IMAGES` | #23 |
 | Makefile `sbom` | Writes an SPDX SBOM and the third-party licence list to `dist/` | bootstrap |
 | docs/template-drift.md | This inventory of deliberate differences from the template | #41 |
+| scripts/tool-pins.extra | Pins for CI tools this repository adds (syft), read by `make check-tool-versions` | #48 |
+| scripts/install-extra-tools.sh | Installs the tools pinned in `scripts/tool-pins.extra`, checksum verified; called by `make ci-tools` | #48 |
 
 ## Local rules that conflict with kit files
 

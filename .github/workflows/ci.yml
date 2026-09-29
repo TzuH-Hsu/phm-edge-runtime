@@ -104,7 +104,7 @@ jobs:
       # This was three separate steps, one of them ~40 lines of shell duplicated
       # verbatim in maintenance.yml.
       - name: Install CI tools
-        run: make ci-tools TOOLS="markdownlint-cli2 yamllint actionlint gitleaks lychee"
+        run: make ci-tools
 
       - name: Run CI
         run: make ci-pr

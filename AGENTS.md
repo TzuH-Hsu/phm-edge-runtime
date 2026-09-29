@@ -105,7 +105,7 @@ Documentation here describes the code. Use neutral, invented examples throughout
 Other conventions:
 
 - Every source file starts with an SPDX identifier: `SPDX-License-Identifier: Apache-2.0` for this library's own code; scripts taken from the github-project-os template keep upstream's `SPDX-License-Identifier: MIT` (see `NOTICE`) and stay byte-identical.
-- Dependency licences: MIT, Apache-2.0, BSD, ISC, plus notice-only licences (curl, blessing, Zlib, PSF-2.0, PostgreSQL, BSL-1.0, CC-BY-4.0). No GPL/AGPL/SSPL or other copyleft — downstream users ship commercial products. A named component outside this list passes only with an entry in `scripts/licence-exceptions.json` stating its reason; development-only dependencies are not checked.
+- Dependency licences are allowed when compliant — downstream users ship commercial products, so no obligation may reach their code. Permissive licences are used directly: MIT, Apache-2.0, BSD, ISC, plus notice-only licences (curl, blessing, Zlib, PSF-2.0, PostgreSQL, BSL-1.0, CC-BY-4.0). Weak copyleft is allowed under conditions — LGPL through dynamic linking only (under LGPL-3.0 where the licence allows it), MPL-2.0 for unmodified files with source available — and each such component needs an entry in `scripts/licence-exceptions.json` stating its condition, with the distributor conditions written in this repository's own documentation. Strong copyleft (GPL, AGPL, SSPL) is not linked. Development-only dependencies are not checked.
 - Contributions are provided under Apache-2.0 by default (Apache-2.0 §5). No CLA.
 
 ## Pointers
