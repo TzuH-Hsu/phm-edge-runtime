@@ -25,6 +25,7 @@ Install the lint tools used by `make lint-docs`:
 | node (any LTS) | `brew install node` — runs `scripts/*.test.js` in `make check` |
 | actionlint | `brew install actionlint` |
 | gitleaks | `brew install gitleaks` |
+| syft | `brew install syft` — `make lint-licenses` (part of `make lint`) and `make sbom` |
 
 Then:
 

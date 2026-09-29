@@ -75,7 +75,7 @@ Files in the template that this repo does not have.
 | .github/workflows/release-please.yml | `runs-on` reads `vars.RELEASE_RUNNER_LABELS` | Same per-workflow runner-variable split | bootstrap |
 | .gitignore | Adds `dist/` | `make sbom` writes SBOM/licence output there | #39 (licence tooling) |
 | SECURITY.md | Rewords the bootstrap-phase-6 paragraph to say this repo's copy of `scripts/bootstrap.sh` predates that phase, and points at `gh api ... security_and_analysis` instead | This repo's bootstrap script is older than the phase the template text describes | #18 |
-| Makefile | `check` target runs `scripts/test_check_licenses.py` via `unittest` instead of `check-license-marker.sh`; adds `lint-licenses` and `sbom` targets (syft-based licence check and SBOM/licence-list output); neither target is wired into `lint`/`ci-pr` yet | This library ships no dependencies to scan yet, and syft is not in the pinned CI tool list; both wire in with the first real dependency | #15, #23, #29, #32, #37, #39 |
+| Makefile | `check` target runs `scripts/test_check_licenses.py` via `unittest` instead of `check-license-marker.sh`; adds `lint-licenses` and `sbom` targets (syft-based licence check and SBOM/licence-list output) | Licence hygiene and SBOM tooling; `lint-licenses` joined `lint` in #48 (see the row below) | #15, #23, #29, #32, #37, #39 |
 | AGENTS.md | Runner-variable line lists four per-workflow variables instead of one; adds a "Repository policy" section (public-library commit rules: no org/site/equipment names, no captured data, SPDX headers, licence allowlist, no CLA) | Per-workflow runner split, and rules specific to a public standalone library | #15 (runners), #37 (policy section, licence allowlist line) |
 | docs/adr/ADR-0008-event-workflow-logic-in-scripts.md | Issue number and date point at this repo's own issue (#14) instead of upstream's (#49); wording says the PR-lint script was "ported" from upstream #56 rather than written fresh; the upgrading-doc reference is qualified as upstream's | Ported from upstream in one change rather than authored incrementally here | #15 |
 | docs/setup/bootstrap.md | Reduced to the phases this repo's `scripts/bootstrap.sh` actually has | Only the phase-5 merge-settings block was ever synced from upstream after bootstrap; the rest are this repo's original, older phases (no phase 6/9, phase 2 misreports on personal accounts) | #13, bootstrap |
@@ -87,6 +87,9 @@ Files in the template that this repo does not have.
 | skills/github-actions-hygiene/SKILL.md | Rule 1 lists the four per-workflow runner variables instead of one `RUNNER_LABELS` | Per-workflow runner-variable split | #18 |
 | skills/issue-writing/SKILL.md | Area example is a generic placeholder (`<area:name — description, exactly as the Area option reads in .github/ISSUE_TEMPLATE/task.yml>`) instead of the template's literal `area:docs`/`area:ci` example | Same placeholder in all six sibling repos: four of them have no `area:docs`/`area:ci`, so the template v0.5.2 sync replaced the example everywhere to keep one patch applicable to all six | #18 |
 | skills/labels-and-taxonomy/SKILL.md | Notes that this repo's older bootstrap phase 2 does not flag the coarse-Type-fallback-on-an-org-repo mistake, unlike upstream's | This repo's `scripts/bootstrap.sh` predates that phase-2 check | #18 |
+| .github/workflows/ci.yml "Install CI tools" step | Runs a bare `make ci-tools` | The tool list lives in the Makefile (`CI_TOOLS`), so a tool this repository adds needs no YAML change | #48 |
+| Makefile `lint` and `ci-tools` | `lint-licenses` added to `lint`; `ci-tools` installs `CI_TOOLS` by default and sends `EXTRA_CI_TOOLS` (syft) to `scripts/install-extra-tools.sh` | The licence check runs in CI with a pinned syft while `scripts/install-ci-tools.sh` stays identical to the template | #48 |
+| CONTRIBUTING.md tool-install table | Adds a `syft` row | `make lint` now runs `lint-licenses`, which needs syft | #48 |
 
 ## Local additions in template directories
 
@@ -101,6 +104,8 @@ Repo-only files under .github/, scripts/, skills/, docs/setup/, docs/adr/ and Ma
 | Makefile `lint-licenses` | Runs `scripts/check-licenses.py` against the repo tree and every image in `SBOM_IMAGES` | #23 |
 | Makefile `sbom` | Writes an SPDX SBOM and the third-party licence list to `dist/` | bootstrap |
 | docs/template-drift.md | This inventory of deliberate differences from the template | #41 |
+| scripts/tool-pins.extra | Pins for CI tools this repository adds (syft), read by `make check-tool-versions` | #48 |
+| scripts/install-extra-tools.sh | Installs the tools pinned in `scripts/tool-pins.extra`, checksum verified; called by `make ci-tools` | #48 |
 
 ## Local rules that conflict with kit files
 
