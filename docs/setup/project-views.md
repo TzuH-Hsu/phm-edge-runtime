@@ -47,10 +47,9 @@ default options (every Project v2 board ships with one).
 
 ## 2. Confirm the planning fields
 
-`scripts/bootstrap.sh` creates `Estimate`, `Start` and `Target` when they
-are missing (it never deletes a field). `Checkpoint` is an iteration field,
-which the script cannot create. Confirm all four exist; add any that are
-missing via **+** next to the field headers → **New field**:
+`scripts/bootstrap.sh` is kept identical to the template and does not create
+these fields; it still creates an `Effort` field (see below). Add any of the
+four that are missing via **+** next to the field headers → **New field**:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -59,7 +58,11 @@ missing via **+** next to the field headers → **New field**:
 | `Target` | Date | Committed finish date (a milestone's due date is a different layer) |
 | `Checkpoint` | Iteration | Internal checkpoint, one level finer than a milestone |
 
-`Effort` is retired: if the board still has an `Effort` field, delete it.
+`Effort` is retired. If the board still has an `Effort` field, copy any value
+still needed into `Estimate` first, then delete the field.
+
+Before using the Checkpoint and Roadmap views, set up the `Checkpoint`
+iterations (start date and length) in the field's settings.
 
 ## 3. Create views
 
@@ -106,6 +109,22 @@ Use **+ (new view)** at the top of the Project for each of these.
 Priority is a label, not a field: filter any view with `label:"priority:p0"`
 rather than adding a Priority field.
 
+## 4. Add new issues and pull requests automatically
+
+`.github/workflows/add-to-project.yml` adds each new issue and pull request to
+the board. It needs, in this repository's settings:
+
+- Repository variable `ADD_TO_PROJECT_URL`: the board's URL.
+- Secret `ADD_TO_PROJECT_PAT`, created both as an Actions secret and as a
+  Dependabot secret (runs triggered by Dependabot see only Dependabot
+  secrets): a classic personal access token with the `project` scope (and
+  `repo` when the repository is private) from an account that can edit the
+  board. `GITHUB_TOKEN` cannot reach a user-level board.
+
+Until both are set, the workflow fails. Pull requests opened by release-please
+are not added automatically (events raised with `GITHUB_TOKEN` do not trigger
+workflows); add them by hand.
+
 ## Checklist
 
 - [ ] `Status`: Backlog / Ready / In Progress / In Review / Blocked / Done
@@ -116,6 +135,7 @@ rather than adding a Priority field.
 - [ ] View: Milestone (table, grouped by Milestone)
 - [ ] View: By area (table, sliced by `area:*`)
 - [ ] View: Blocked (table, `status:Blocked`)
+- [ ] `ADD_TO_PROJECT_URL` variable and `ADD_TO_PROJECT_PAT` secret (Actions and Dependabot) set
 
 ## See also
 

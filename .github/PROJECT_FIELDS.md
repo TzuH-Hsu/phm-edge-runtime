@@ -33,7 +33,7 @@ The issue form you pick still matters (it decides the body template); GitHub sim
 
 ## Rules
 
-1. **One home per attribute.** Adding a Project field that mirrors a label (or vice versa) is a contract violation — remove one. Estimate, Start, Target and Checkpoint live only on the Project board — never in issue bodies, documentation or commit messages.
+1. **One home per attribute.** Adding a Project field that mirrors a label (or vice versa) is a contract violation — remove one. The values of Estimate, Start, Target and Checkpoint live only on the Project board — never in issue bodies, documentation or commit messages.
 2. **Labels are for facts an agent can write in one `gh` call.** Workflow state belongs to the Project board, not labels.
 3. **Milestone = commitment.** Assigning a milestone means "this ships in that version/phase". Backlog items carry no milestone.
 4. **Retire, don't accumulate.** When a label or field stops earning its keep, delete it everywhere (see `skills/labels-and-taxonomy/`).
