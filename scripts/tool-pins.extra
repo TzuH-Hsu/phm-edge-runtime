@@ -1,3 +1,3 @@
 # Tools this repository adds on top of the template kit: `<tool> <version> <source>`.
 # Read by scripts/check-tool-versions.sh (drift) and scripts/install-extra-tools.sh (CI install).
-syft 1.52.0 github:anchore/syft
+syft 1.54.1 github:anchore/syft
