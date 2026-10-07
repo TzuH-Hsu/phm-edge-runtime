@@ -115,15 +115,15 @@ rather than adding a Priority field.
 the board. It needs, in this repository's settings:
 
 - Repository variable `ADD_TO_PROJECT_URL`: the board's URL.
-- Secret `ADD_TO_PROJECT_PAT`, created both as an Actions secret and as a
-  Dependabot secret (runs triggered by Dependabot see only Dependabot
-  secrets): a classic personal access token with the `project` scope (and
-  `repo` when the repository is private) from an account that can edit the
-  board. `GITHUB_TOKEN` cannot reach a user-level board.
+- Actions secret `ADD_TO_PROJECT_PAT`: a personal access token from an account
+  that can edit the board — classic with the `project` and `repo` scopes, or
+  fine-grained with Projects read and write plus Issues and Pull requests
+  read. `GITHUB_TOKEN` cannot reach a user-level board.
 
-Until both are set, the workflow fails. Pull requests opened by release-please
-are not added automatically (events raised with `GITHUB_TOKEN` do not trigger
-workflows); add them by hand.
+Until both are set, the workflow fails. Two kinds of pull request are not
+added automatically and are added by hand: those opened by release-please
+(events raised with `GITHUB_TOKEN` do not trigger workflows) and those opened
+by Dependabot (they get no secrets under `pull_request_target`).
 
 ## Checklist
 
@@ -135,7 +135,7 @@ workflows); add them by hand.
 - [ ] View: Milestone (table, grouped by Milestone)
 - [ ] View: By area (table, sliced by `area:*`)
 - [ ] View: Blocked (table, `status:Blocked`)
-- [ ] `ADD_TO_PROJECT_URL` variable and `ADD_TO_PROJECT_PAT` secret (Actions and Dependabot) set
+- [ ] `ADD_TO_PROJECT_URL` variable and `ADD_TO_PROJECT_PAT` Actions secret set
 
 ## See also
 
