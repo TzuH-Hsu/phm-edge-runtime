@@ -96,7 +96,7 @@ Phases:
   1. Labels             sync .github/labels.yml, prompt to prune extras
   2. Issue types        check native Bug/Feature/Task availability
   3. Milestone          create v0.1.0 if missing
-  4. Project            create Project v2 board + Effort field (see --skip-project)
+  4. Project            create Project v2 board + Estimate/Start/Target fields (see --skip-project)
   5. Repo settings       merge strategy, delete-branch-on-merge, wiki off
   6. Actions permission  enable Actions to create/approve PRs (release-please)
   7. Ruleset             import .github/rulesets/main-branch.json
@@ -541,7 +541,7 @@ phase_project() {
 
   if [ -z "$project_number" ]; then
     warn "could not determine project number — skipping link/field-create steps"
-    manual "Link the '${title}' project to ${REPO} and add the Effort field manually"
+    manual "Link the '${title}' project to ${REPO} and add the Estimate, Start, Target and Checkpoint fields manually"
     record_phase "4. Project" "warn"
     return
   fi
@@ -564,24 +564,35 @@ phase_project() {
     return 1
   fi
 
-  # Skip field-create when an "Effort" field already exists (re-run safety —
+  # Planning fields (.github/PROJECT_FIELDS.md): Estimate (number), Start and
+  # Target (date). Each is created only when no field of that name exists —
   # gh project field-create has no --force/upsert and would create a
-  # duplicate field on every re-run otherwise).
-  local existing_fields
+  # duplicate field on every re-run otherwise — and no existing field is
+  # ever deleted or changed. Checkpoint is an iteration field, which
+  # gh project field-create cannot create, so it stays a manual step.
+  local existing_fields field_spec field_name field_type
   existing_fields="$(gh project field-list "$project_number" --owner "$OWNER" --format json --jq '.fields[].name' 2>/dev/null || true)"
-  if printf '%s\n' "$existing_fields" | grep -qxF "Effort"; then
-    ok "Effort field already exists — skip create"
-  elif [ "$project_already_existed" -eq 1 ] && [ "$DRY_RUN" -eq 0 ] && [ -z "$existing_fields" ]; then
-    # field-list came back empty/unreadable for a pre-existing project —
-    # do not risk a duplicate field; require a manual check instead.
-    warn "could not list fields for existing project '${title}' — skipping Effort field-create to avoid a duplicate"
-    manual "Verify the 'Effort' single-select field (S/M/L) exists on project '${title}'; add it manually if missing"
+  for field_spec in "Estimate:NUMBER" "Start:DATE" "Target:DATE"; do
+    field_name="${field_spec%%:*}"
+    field_type="${field_spec#*:}"
+    if printf '%s\n' "$existing_fields" | grep -qxF "$field_name"; then
+      ok "${field_name} field already exists — skip create"
+    elif [ "$project_already_existed" -eq 1 ] && [ "$DRY_RUN" -eq 0 ] && [ -z "$existing_fields" ]; then
+      # field-list came back empty/unreadable for a pre-existing project —
+      # do not risk a duplicate field; require a manual check instead.
+      warn "could not list fields for existing project '${title}' — skipping ${field_name} field-create to avoid a duplicate"
+      manual "Verify the '${field_name}' field (${field_type}) exists on project '${title}'; add it manually if missing"
+    else
+      run_or_dry gh project field-create "$project_number" --owner "$OWNER" \
+        --name "$field_name" --data-type "$field_type" \
+        || { fail "gh project field-create failed"; record_phase "4. Project" "fail"; return 1; }
+      ok "${field_name} field created (${field_type})"
+    fi
+  done
+  if printf '%s\n' "$existing_fields" | grep -qxF "Checkpoint"; then
+    ok "Checkpoint field already exists"
   else
-    run_or_dry gh project field-create "$project_number" --owner "$OWNER" \
-      --name "Effort" --data-type "SINGLE_SELECT" \
-      --single-select-options "S,M,L" \
-      || { fail "gh project field-create failed"; record_phase "4. Project" "fail"; return 1; }
-    ok "Effort field created (S/M/L)"
+    manual "Add the 'Checkpoint' iteration field to project '${title}' by hand — see docs/setup/project-views.md"
   fi
 
   # Status options — set the single-home contract's target set
@@ -597,7 +608,7 @@ phase_project() {
   #
   # Skipped entirely for a project just created under --dry-run: its
   # "project_number" is the "DRY-RUN" placeholder (no real project exists
-  # yet to query), matching the same fall-through the Effort field-create
+  # yet to query), matching the same fall-through the planning field-create
   # step above relies on.
   if [ "$project_number" = "DRY-RUN" ]; then
     printf '%s[dry-run]%s would set Status options to the target set (Backlog/Ready/In Progress/In Review/Blocked/Done) on the newly created project\n' "$C_YELLOW" "$C_RESET"

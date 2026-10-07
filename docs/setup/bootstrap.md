@@ -65,14 +65,17 @@ Manual: **Issues → Milestones → New milestone**, title `v0.1.0`.
 ### 4. Project
 
 Creates a GitHub Project (v2) titled `<repo name> board`, links it to the
-repository, adds an `Effort` single-select field (`S`/`M`/`L`), and — on the
+repository, adds the `Estimate` (number), `Start` and `Target` (date)
+fields, and — on the
 project this run itself just created — sets the `Status` field's options to
 the single-home contract's target set
 (`Backlog`/`Ready`/`In Progress`/`In Review`/`Blocked`/`Done`) via the
 GraphQL `updateProjectV2Field` mutation. Re-running is safe: an existing
-link is left as-is, the `Effort` field is only created if a field with that
-name isn't already present, and Status options are never rewritten on a
-project that pre-existed the run.
+link is left as-is, each field is only created if a field with that name
+isn't already present, no existing field is deleted, and Status options are
+never rewritten on a project that pre-existed the run. The `Checkpoint`
+iteration field cannot be created by `gh project field-create`; the script
+prints a MANUAL note for it.
 
 **Status options — automatic only on a just-created project:** the script
 reads the current Status option names (in order) via `gh project
@@ -91,8 +94,9 @@ field-list`:
   board this run created.
 
 Manual: **Your profile → Projects → New project**, title it `<repo> board`,
-then **⋯ → Link a repository** to attach it. Add a single-select field named
-`Effort` with options `S`, `M`, `L` via **+ (add field)** on the board. If
+then **⋯ → Link a repository** to attach it. Add the `Estimate` (number),
+`Start` and `Target` (date) and `Checkpoint` (iteration) fields via
+**+ (add field)** on the board. If
 bootstrap warned about a pre-existing project or custom Status options (or
 you want to set them by hand), see `docs/setup/project-views.md`.
 

@@ -7,6 +7,7 @@ variable, one per workflow so a lint job and a release job can differ:
 | --- | --- |
 | `.github/workflows/ci.yml` | `CI_RUNNER_LABELS` |
 | `.github/workflows/issue-labeler.yml` | `AUTOMATION_RUNNER_LABELS` |
+| `.github/workflows/add-to-project.yml` | `AUTOMATION_RUNNER_LABELS` |
 | `.github/workflows/maintenance.yml` | `MAINTENANCE_RUNNER_LABELS` |
 | `.github/workflows/release-please.yml` | `RELEASE_RUNNER_LABELS` |
 

@@ -47,12 +47,14 @@ default options (every Project v2 board ships with one).
 
 ## 2. Confirm the planning fields
 
-Confirm these four fields exist on the board; add any that are missing on
-the board via **+** next to the field headers → **New field**:
+`scripts/bootstrap.sh` creates `Estimate`, `Start` and `Target` when they
+are missing (it never deletes a field). `Checkpoint` is an iteration field,
+which the script cannot create. Confirm all four exist; add any that are
+missing via **+** next to the field headers → **New field**:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `Estimate` | Number | Rough estimate in person-days (1 person-day = 5 hours) |
+| `Estimate` | Number | Rough estimate in person-days |
 | `Start` | Date | Scheduled start |
 | `Target` | Date | Committed finish date (a milestone's due date is a different layer) |
 | `Checkpoint` | Iteration | Internal checkpoint, one level finer than a milestone |

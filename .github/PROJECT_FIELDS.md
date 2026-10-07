@@ -12,7 +12,7 @@ Every issue/PR attribute lives in **exactly one place**. Never dual-write the sa
 | Area | `area:*` **labels** | This library's own domains — see `.github/labels.yml` |
 | Workflow status | **Project `Status` field** | `Backlog` / `Ready` / `In Progress` / `In Review` / `Blocked` / `Done` |
 | Target version | **Milestone** | `vX.Y.Z` releases, `gov-*` process phases; **no milestone = backlog** |
-| Estimate | **Project `Estimate` field** (number) | Rough estimate in person-days (1 person-day = 5 hours). Replaces Effort (S/M/L); the Effort field is retired. An issue estimated above 2 is split by its implementer into sub-issues of at most 2 person-days each before work starts; the parent stays as the progress roll-up (Sub-issues progress) |
+| Estimate | **Project `Estimate` field** (number) | Rough estimate in person-days. Replaces Effort (S/M/L); the Effort field is retired. An issue with a large estimate is split by its implementer into sub-issues before work starts; the parent stays as the progress roll-up (Sub-issues progress) |
 | Schedule | **Project `Start` / `Target` fields** (date) | Scheduled start and finish. Target is the committed date; a milestone's due date is a different layer |
 | Checkpoint | **Project `Checkpoint` field** (iteration) | Internal checkpoint, one level finer than a milestone; milestones are unchanged |
 | Owner | **Assignee** | One primary owner per issue (collaborators may be added); **never repeat a name in the title, in a documentation table, or in a document header** |
