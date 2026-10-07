@@ -3,7 +3,9 @@ name: Add to project
 # Adds each new issue and pull request to the Project board at the URL in the
 # repository variable ADD_TO_PROJECT_URL. GITHUB_TOKEN cannot reach a
 # user-level board, so the action authenticates with the ADD_TO_PROJECT_PAT
-# secret; the job fails until both are set.
+# secret; the job fails until both are set. Create the secret as an Actions
+# secret and as a Dependabot secret: runs triggered by Dependabot see only
+# Dependabot secrets.
 #
 # pull_request_target, not pull_request: under pull_request a fork's pull
 # request gets no secrets. This job never checks out or runs the pull
