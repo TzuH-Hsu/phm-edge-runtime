@@ -120,10 +120,10 @@ the board. It needs, in this repository's settings:
   fine-grained with Projects read and write plus Issues and Pull requests
   read. `GITHUB_TOKEN` cannot reach a user-level board.
 
-Until both are set, the workflow fails. Two kinds of pull request are not
-added automatically and are added by hand: those opened by release-please
-(events raised with `GITHUB_TOKEN` do not trigger workflows) and those opened
-by Dependabot (they get no secrets under `pull_request_target`).
+Until both are set, the workflow fails. Pull requests opened by release-please
+are not added automatically (events raised with `GITHUB_TOKEN` do not trigger
+workflows); add them by hand. Whether pull requests opened by Dependabot are
+added automatically is not yet verified; until it is, add them by hand.
 
 ## Checklist
 

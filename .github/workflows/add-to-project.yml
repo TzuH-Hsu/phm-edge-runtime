@@ -7,9 +7,9 @@ name: Add to project
 #
 # pull_request_target, not pull_request: under pull_request a fork's pull
 # request gets no secrets. This job never checks out or runs the pull
-# request's code; it only passes the event to the action. Pull requests opened
-# by Dependabot get no secrets under pull_request_target either, so they are
-# not added here; add them to the board by hand.
+# request's code; it only passes the event to the action. Whether pull
+# requests opened by Dependabot are added is not yet verified; until it is,
+# add them to the board by hand.
 
 on:
   issues:
