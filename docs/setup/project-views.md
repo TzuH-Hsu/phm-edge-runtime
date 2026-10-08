@@ -1,5 +1,9 @@
 # Project views setup
 
+This repository's issues are on the user-level board for the five
+implementation repositories. They are added by the board's built-in Auto-add
+workflow.
+
 `scripts/bootstrap.sh` does not create Project views, so that part of this
 setup is always done by hand after `scripts/bootstrap.sh` creates the
 Project. The `Status` field's options, however, are

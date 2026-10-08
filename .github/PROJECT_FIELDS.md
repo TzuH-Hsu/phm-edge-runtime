@@ -42,5 +42,5 @@ The issue form you pick still matters (it decides the body template); GitHub sim
 ## Where things are defined
 
 - Labels: `.github/labels.yml` (declarative source of truth; sync = re-run `scripts/bootstrap.sh`)
-- Project fields and views: `docs/setup/project-views.md` (`Status`, `Estimate`, `Start`, `Target`, `Checkpoint`; views are set up manually)
+- Project: the user-level board for the five implementation repositories, this one included. Issues are added by the board's built-in Auto-add workflow; `Status` is computed by a status-sync workflow outside this repository. Fields `Status`, `Estimate`, `Start`, `Target`, `Checkpoint` and the views are set up on the board — `docs/setup/project-views.md`
 - Native issue types: set automatically by the issue forms in `.github/ISSUE_TEMPLATE/`
