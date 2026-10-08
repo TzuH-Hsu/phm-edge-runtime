@@ -123,6 +123,12 @@ rather than adding a Priority field.
 New issues and pull requests are added to the board by the board's built-in
 Auto-add workflow; this repository needs no secret.
 
+The Auto-add workflow is configured on the board, one per repository, and is
+off until someone turns it on: on the board, open **⋯ → Workflows → Auto-add
+to project**, select this repository, set the filter to
+`is:issue,pr is:open`, save, and turn the workflow on. Items that existed
+before it was turned on are not added; add them once by hand.
+
 ## Checklist
 
 - [ ] `Status`: Backlog / Ready / In Progress / In Review / Blocked / Done
@@ -133,6 +139,7 @@ Auto-add workflow; this repository needs no secret.
 - [ ] View: Milestone (table, grouped by Milestone)
 - [ ] View: By area (table, sliced by `area:*`)
 - [ ] View: Blocked (table, `status:Blocked`)
+- [ ] Auto-add workflow on the board turned on for this repository (`is:issue,pr is:open`)
 
 ## See also
 
