@@ -107,7 +107,7 @@ Use **+ (new view)** at the top of the Project for each of these.
 ### View 5 — "By area"
 
 - Layout: **Table**
-- Slice by: the `area:*` labels
+- Slice by: the `Labels` field (the `area:*` labels)
 - Purpose: one area's items at a time.
 
 ### View 6 — "Blocked"
