@@ -114,21 +114,10 @@ Use **+ (new view)** at the top of the Project for each of these.
 Priority is a label, not a field: filter any view with `label:"priority:p0"`
 rather than adding a Priority field.
 
-## 4. Add new issues and pull requests automatically
+## 4. New issues and pull requests
 
-`.github/workflows/add-to-project.yml` adds each new issue and pull request to
-the board. It needs, in this repository's settings:
-
-- Repository variable `ADD_TO_PROJECT_URL`: the board's URL.
-- Actions secret `ADD_TO_PROJECT_PAT`: a personal access token from an account
-  that can edit the board: a classic token with the `project` and `repo`
-  scopes (fine-grained tokens do not support a user-owned board).
-  `GITHUB_TOKEN` cannot reach a user-level board.
-
-Until both are set, the workflow fails. Pull requests opened by release-please
-are not added automatically (events raised with `GITHUB_TOKEN` do not trigger
-workflows); add them by hand. Whether pull requests opened by Dependabot are
-added automatically is not yet verified; until it is, add them by hand.
+New issues and pull requests are added to the board by the board's built-in
+Auto-add workflow; this repository needs no secret.
 
 ## Checklist
 
@@ -140,7 +129,6 @@ added automatically is not yet verified; until it is, add them by hand.
 - [ ] View: Milestone (table, grouped by Milestone)
 - [ ] View: By area (table, sliced by `area:*`)
 - [ ] View: Blocked (table, `status:Blocked`)
-- [ ] `ADD_TO_PROJECT_URL` variable and `ADD_TO_PROJECT_PAT` Actions secret set
 
 ## See also
 
