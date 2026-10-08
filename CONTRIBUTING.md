@@ -40,10 +40,11 @@ skipped level.
 ## Issues
 
 - Always use the issue forms — never open a blank issue. The coarse type is
-  carried by the `type:bug` / `type:feature` labels; neither means Task.
+  carried by the `type:bug` / `type:feature` labels; neither means Task. After
+  opening a Bug or Feature issue, add the matching label by hand.
 - Priority and area labels are applied automatically by the labeler workflow;
   you don't set them by hand.
-- Every piece of issue/PR metadata (type, priority, area, status, version)
+- Every piece of issue/PR metadata (type, priority, area, status, milestone)
   lives in exactly one place. See `.github/PROJECT_FIELDS.md` for the
   single-home contract — never dual-write the same attribute in two places.
 

@@ -91,7 +91,8 @@ Good acceptance criteria read like a test plan:
 ```markdown
 - [ ] `make verify` passes on a fresh clone
 - [ ] An issue opened from the Feature form carries the `type:feature` label
-- [ ] No `type:*`, `priority:*`, or `area:*` label is missing after form submission
+- [ ] No `priority:*` or `area:*` label is missing after form submission, and a Bug
+      or Feature issue carries `type:bug` / `type:feature`
 - [ ] An issue opened with `--body` in the form's shape carries `priority:*` and
       `area:*` after the labeler run
 ```
@@ -109,7 +110,7 @@ reviewer nothing to check against — rewrite before handing the issue to anyone
   right approach" — that is a human-judgment task; resolve it in the issue first.
 - Using an `epic:*` label or a "blocked by #12" sentence instead of native sub-issues
   and blocked-by links — invisible to automation and easy to let go stale.
-- Opening a blank issue to "save time" — it skips native type assignment and the
+- Opening a blank issue to "save time" — it skips the form's template and the
   priority/area fields entirely, pushing the cleanup onto triage later.
 - An agent opening issues with `--body` prose and no `### Priority` / `### Area`
   sections — every such issue is label-less unless `--label` supplied some, which

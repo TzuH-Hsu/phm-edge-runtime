@@ -8,7 +8,7 @@ Agent-specific entry files (`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructi
 
 1. Work from an issue. If no issue exists for what you are about to do, create one first (see `skills/issue-writing/` — non-interactively, write the body in the form's shape so the labeler applies the labels).
 2. Never commit directly to `main`. Branch as `<type>/<issue#>-<slug>` (e.g. `feat/42-label-sync`), open a PR.
-3. Follow the metadata single-home contract in `.github/PROJECT_FIELDS.md` — every attribute (type, priority, area, status, version) lives in exactly one place. Never dual-write.
+3. Follow the metadata single-home contract in `.github/PROJECT_FIELDS.md` — every attribute (type, priority, area, status, milestone) lives in exactly one place. Never dual-write.
 4. Run `make verify` before opening or updating a PR.
 5. Declare skipped validation levels in the PR body: `RISK: <level> not run — <reason>`. Never skip silently.
 6. Never commit `*.local.md` files, secrets, or `.env*` files (only `.env.example` is allowed).

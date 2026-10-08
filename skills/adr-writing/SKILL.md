@@ -20,7 +20,7 @@ Decisions made in a PR thread or a chat session evaporate — the context window
    - **Decision** is written as a fact ("We use X for Y"), not a proposal or a debate summary.
    - **Consequences** names what becomes easier *and* what becomes harder — an ADR that only lists benefits is marketing, not a decision record. Include accepted costs explicitly.
    - **Alternatives considered** names each real alternative and *why not*, not just "we could have also...".
-5. **Status lifecycle is one-directional**: `Proposed` → `Accepted` → (eventually) `Superseded by ADR-XXXX` or `Deprecated`. **Never edit an old ADR's Decision/Consequences to reflect a new choice, and never delete one.** Write a new ADR that supersedes it and update the old one's status line to point at the new number. History has to stay legible.
+5. **Status lifecycle is one-directional**: `Proposed` → `Accepted` → (eventually) `Superseded by ADR-XXXX` or `Deprecated`. **Never edit an old ADR's Decision/Consequences to reflect a new choice, and never delete one.** When a new choice replaces the whole decision, write a new ADR that supersedes it and update the old one's status line to point at the new number. When a later change replaces only part of an accepted decision and that change is recorded elsewhere (a contract file or another ADR), set the status line to `Accepted. Partially superseded <date>: <what changed and where it is now defined>`, leave the body as it was, and update the index (`docs/adr/README.md`). History has to stay legible.
 6. **Keep it under a page.** If the Context section needs subheadings, the decision is probably two decisions — split it.
 7. **Update `docs/adr/README.md`'s index table in the same PR.** An ADR not in the index is functionally undiscoverable.
 8. **Agents: read the relevant ADRs before changing behavior adjacent to one.** An ADR is a "do not helpfully fix this" fence — if a decision looks locally suboptimal but an ADR explains why it's that way on purpose, that's a signal to stop and ask, not to improve it silently.
@@ -46,6 +46,12 @@ Supersede an existing ADR instead of editing it:
 ```markdown
 <!-- in ADR-0002, change only the Status line -->
 - **Status**: Superseded by ADR-0007
+```
+
+Mark a partial supersession instead when only part of the decision changed:
+
+```markdown
+- **Status**: Accepted. Partially superseded YYYY-MM-DD: <what changed and where it is now defined>
 ```
 
 Add the new ADR to the index in the same PR:

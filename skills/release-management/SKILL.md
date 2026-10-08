@@ -25,7 +25,7 @@ A release must never ship from an unverified state, and version/changelog bookke
    3. `git tag vX.Y.Z` on the merged commit.
    4. `gh release create --generate-notes`, then add the hand-written TLDR.
    Trade-off: fewer moving parts and no bot to maintain, but CHANGELOG/version consistency now depends entirely on human discipline — this is the exact failure mode release-please exists to remove.
-5. **Release readiness is not a milestone query.** Releases are cut by release-please from `main` and are independent of the `M1`–`M4` milestones, which are delivery checkpoints. Before merging the release PR, read the open `priority:p0` / `priority:p1` issues: any that describes a defect in the commits being released blocks the release.
+5. **Release readiness is not a milestone query.** Releases are cut by release-please from `main` and are independent of the `M1`–`M4` milestones, which are delivery checkpoints. Before merging the release PR, read every open `priority:p0` / `priority:p1` issue: any that describes a defect in a commit since the last release tag blocks the release. Compare against the full commit range, not only the changelog, which leaves out hidden types (rule 2).
 6. **Never cut a release with red or skipped CI.** If a validation level was skipped with a `RISK:` line during development, resolve or explicitly accept that risk before the release — don't let it ride silently into a tagged version.
 
 ## How
@@ -33,9 +33,10 @@ A release must never ship from an unverified state, and version/changelog bookke
 Check for open blockers before merging the release PR:
 
 ```bash
-gh issue list --label "priority:p0" --state open
-gh issue list --label "priority:p1" --state open
-# read each against the release PR's changelog; a defect in the released commits blocks the release
+gh issue list --label "priority:p0" --state open --limit 1000
+gh issue list --label "priority:p1" --state open --limit 1000
+git log --oneline "$(git describe --tags --abbrev=0)"..origin/main
+# read each issue against those commits; a defect in any of them blocks the release
 ```
 
 Merge the release-please PR yourself, with squash — the only strategy this repo enables (bootstrap phase 5 sets `allow_merge_commit=false` and `allow_rebase_merge=false`). release-please does not merge its own PR; its next run on `push: main` detects the merged release PR and cuts the tag and GitHub Release:

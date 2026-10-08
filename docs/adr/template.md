@@ -1,6 +1,6 @@
 # ADR-NNNN: Title
 
-- **Status**: Proposed | Accepted | Superseded by ADR-XXXX | Deprecated
+- **Status**: Proposed | Accepted | Accepted. Partially superseded YYYY-MM-DD: … | Superseded by ADR-XXXX | Deprecated
 - **Date**: YYYY-MM-DD
 - **Issue**: #NNN (if any)
 
