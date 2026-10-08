@@ -1,6 +1,6 @@
 # ADR-0003: Metadata single-home policy
 
-- **Status**: Accepted
+- **Status**: Accepted. Partially superseded 2026-10-08: the Project field set is defined in `.github/PROJECT_FIELDS.md`
 - **Date**: 2026-07-03
 
 ## Context

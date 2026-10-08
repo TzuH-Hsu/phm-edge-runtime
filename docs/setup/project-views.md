@@ -21,8 +21,9 @@ and `Checkpoint`. `Effort` is retired. Do **not** add
 native issue type, and a mirrored field is a contract violation (see
 `docs/adr/ADR-0003-metadata-single-home.md`).
 
-`Status` is fully automatic. `Backlog`, `Ready` and `Blocked` are computed
-twice a day from `Start` and the issue's blocked-by relations; `In Progress`,
+`Status` is fully automatic. `Backlog`, `Ready` and `Blocked` are synced
+before 00:00 and 12:00 Taipei time every day from `Start` and the issue's
+blocked-by relations; `In Progress`,
 `In Review` and `Done` are set by PR and issue events. People only maintain
 the issues' blocked-by relations and `Start` on the board.
 
@@ -118,16 +119,17 @@ Use **+ (new view)** at the top of the Project for each of these.
 Priority is a label, not a field: filter any view with `label:"priority:p0"`
 rather than adding a Priority field.
 
-## 4. New issues and pull requests
+## 4. New issues
 
-New issues and pull requests are added to the board by the board's built-in
-Auto-add workflow; this repository needs no secret.
+New issues are added to the board by the board's built-in Auto-add workflow;
+this repository needs no secret. Pull requests are not added to the board: an
+issue moves to `In Progress` when a pull request is linked to it.
 
 The Auto-add workflow is configured on the board, one per repository, and is
 off until someone turns it on: on the board, open **⋯ → Workflows → Auto-add
-to project**, select this repository, set the filter to
-`is:issue,pr is:open`, save, and turn the workflow on. Items that existed
-before it was turned on are not added; add them once by hand.
+to project**, select this repository, set the filter to `is:issue is:open`,
+save, and turn the workflow on. Issues that existed before it was turned on
+are not added; add them once by hand.
 
 ## Checklist
 
@@ -139,7 +141,7 @@ before it was turned on are not added; add them once by hand.
 - [ ] View: Milestone (table, grouped by Milestone)
 - [ ] View: By area (table, sliced by `area:*`)
 - [ ] View: Blocked (table, `status:Blocked`)
-- [ ] Auto-add workflow on the board turned on for this repository (`is:issue,pr is:open`)
+- [ ] Auto-add workflow on the board turned on for this repository (`is:issue is:open`)
 
 ## See also
 
