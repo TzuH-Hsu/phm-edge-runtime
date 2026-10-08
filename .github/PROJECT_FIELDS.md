@@ -11,7 +11,7 @@ Every issue/PR attribute lives in **exactly one place**. Never dual-write the sa
 | Priority | `priority:*` **labels** | `p0` critical / `p1` milestone-blocking / `p2` important / `p3` polish; Project views filter by label (`label:"priority:p0"`), no Priority field |
 | Area | `area:*` **labels** | This library's own domains — see `.github/labels.yml` |
 | Workflow status | **Project `Status` field** | `Backlog` / `Ready` / `In Progress` / `In Review` / `Blocked` / `Done`. Status is fully automatic: `Backlog`, `Ready` and `Blocked` are synced before 00:00 and 12:00 Taipei time every day from `Start` and blocked-by by the project-status-sync workflow in the shared board's home repository; `In Progress`, `In Review` and `Done` are set by PR and issue events. People only maintain the issues' blocked-by relations and `Start` on the board. |
-| Target version | **Milestone** | `vX.Y.Z` releases, `gov-*` process phases; **no milestone = backlog** |
+| Target version | **Milestone** | `M1`–`M4`, grouping work by delivery checkpoint; **no milestone = backlog** |
 | Estimate | **Project `Estimate` field** (number) | Rough estimate in person-days. Replaces Effort (S/M/L); the Effort field is retired. An issue with a large estimate is split by its implementer into sub-issues before work starts; the parent stays as the progress roll-up (Sub-issues progress) Once an issue is split into sub-issues, its Estimate is cleared; the numbers stay on the sub-issues and the parent shows Sub-issues progress. |
 | Schedule | **Project `Start` / `Target` fields** (date) | Scheduled start and finish. Target is the committed date; a milestone's due date is a different layer |
 | Checkpoint | **Project `Checkpoint` field** (iteration) | Internal checkpoint, one level finer than a milestone; milestones are unchanged |
@@ -43,4 +43,4 @@ The issue form you pick still matters (it decides the body template); GitHub sim
 
 - Labels: `.github/labels.yml` (declarative source of truth; sync = re-run `scripts/bootstrap.sh`)
 - Project: the user-level board for the five implementation repositories, this one included. Issues are added by the board's built-in Auto-add workflow; `Status` is computed by a status-sync workflow outside this repository. Fields `Status`, `Estimate`, `Start`, `Target`, `Checkpoint` and the views are set up on the board — `docs/setup/project-views.md`
-- Native issue types: set automatically by the issue forms in `.github/ISSUE_TEMPLATE/`
+- Coarse type: the `type:bug` / `type:feature` labels (Type rows above); the issue forms in `.github/ISSUE_TEMPLATE/` cannot set a native issue type on a personal account

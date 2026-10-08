@@ -56,6 +56,11 @@ On personal-account repos, see the "Personal accounts" note in
 
 ### 3. Milestone
 
+> This repository's `scripts/bootstrap.sh` is not changed: phase 3 below still
+> offers to create a `v0.1.0` milestone. This repository's milestones are
+> `M1`–`M4`, so answer no at the prompt, or delete a `v0.1.0` milestone the
+> script created.
+
 Creates a `v0.1.0` milestone ("First release") if one doesn't already exist
 (checked across both open and closed milestones, so a closed v0.1.0 is not
 recreated).

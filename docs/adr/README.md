@@ -16,7 +16,7 @@ Routine choices (a library patch bump, a wording tweak) do not get ADRs. When in
 
 1. Copy `template.md` to `ADR-NNNN-short-slug.md` (next free number).
 2. Write it in the PR that implements (or proposes) the decision.
-3. Status lifecycle: `Proposed` → `Accepted` → (later) `Superseded by ADR-XXXX` or `Deprecated`. Never delete an ADR — supersede it.
+3. Status lifecycle: `Proposed` → `Accepted` → (later) `Superseded by ADR-XXXX` or `Deprecated`. When a later change replaces only part of an accepted decision, the status reads `Accepted. Partially superseded <date>: <what changed and where it is now defined>`, and the body is left as it was. Never delete an ADR — supersede it.
 
 ## Index
 
@@ -24,6 +24,6 @@ Routine choices (a library patch bump, a wording tweak) do not get ADRs. When in
 | --- | --- | --- |
 | [ADR-0001](ADR-0001-adopt-adr.md) | Adopt Architecture Decision Records | Accepted |
 | [ADR-0002](ADR-0002-release-flow.md) | Release flow: release-please with human-gated release PRs | Accepted |
-| [ADR-0003](ADR-0003-metadata-single-home.md) | Metadata single-home policy | Accepted |
-| [ADR-0007](ADR-0007-retire-agent-labels.md) | Retire the `agent-ok` / `by-agent` label mechanism | Accepted |
+| [ADR-0003](ADR-0003-metadata-single-home.md) | Metadata single-home policy | Accepted. Partially superseded 2026-10-08 |
+| [ADR-0007](ADR-0007-retire-agent-labels.md) | Retire the `agent-ok` / `by-agent` label mechanism | Accepted. Partially superseded 2026-10-09 |
 | [ADR-0008](ADR-0008-event-workflow-logic-in-scripts.md) | Event-driven workflow logic lives in `scripts/`, behind a thin `github-script` caller | Accepted |

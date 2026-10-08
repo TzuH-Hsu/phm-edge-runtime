@@ -15,7 +15,8 @@ safe to hand to an AI agent without a live conversation.
 ## Rules
 
 1. Always use an issue form (Bug / Feature / Task) — never open a blank issue. The
-   form you pick sets the native GitHub issue type; that type is authoritative.
+   form you pick sets the template; on this personal account the coarse type is
+   carried by the `type:bug` / `type:feature` labels (`.github/PROJECT_FIELDS.md`).
    Non-interactively (an agent, a script — anything that cannot answer the form's
    prompts), write the body in the shape the form would have rendered (see
    "Non-interactive: no form" below). The labeler reads that shape, not the form.
