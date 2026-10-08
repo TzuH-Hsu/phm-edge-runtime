@@ -8,11 +8,13 @@ Every issue/PR attribute lives in **exactly one place**. Never dual-write the sa
 | --- | --- | --- |
 | Type (coarse) | `type:bug` / `type:feature` **labels** | Native issue types cannot be applied on a personal account, so labels are Type's home; neither label present means Task |
 | Type (subtype) | `type:*` **labels** | `chore` / `ops` / `docs` / `security` — Task subtypes only |
-| Priority | `priority:*` **labels** | `p0` critical / `p1` milestone-blocking / `p2` important / `p3` polish |
+| Priority | `priority:*` **labels** | `p0` critical / `p1` milestone-blocking / `p2` important / `p3` polish; Project views filter by label (`label:"priority:p0"`), no Priority field |
 | Area | `area:*` **labels** | This library's own domains — see `.github/labels.yml` |
-| Workflow status | **Project `Status` field** | `Backlog` / `Ready` / `In Progress` / `In Review` / `Blocked` / `Done` |
+| Workflow status | **Project `Status` field** | `Backlog` / `Ready` / `In Progress` / `In Review` / `Blocked` / `Done`. Status is fully automatic: `Backlog`, `Ready` and `Blocked` are computed twice a day from `Start` and blocked-by by the project-status-sync workflow in the shared board's home repository; `In Progress`, `In Review` and `Done` are set by PR and issue events. People only maintain the issues' blocked-by relations and `Start` on the board. |
 | Target version | **Milestone** | `vX.Y.Z` releases, `gov-*` process phases; **no milestone = backlog** |
-| Effort | **Project `Effort` field** | `S` (≤ half a day) / `M` (≤ 2 days) / `L` (must be decomposed first) |
+| Estimate | **Project `Estimate` field** (number) | Rough estimate in person-days. Replaces Effort (S/M/L); the Effort field is retired. An issue with a large estimate is split by its implementer into sub-issues before work starts; the parent stays as the progress roll-up (Sub-issues progress) |
+| Schedule | **Project `Start` / `Target` fields** (date) | Scheduled start and finish. Target is the committed date; a milestone's due date is a different layer |
+| Checkpoint | **Project `Checkpoint` field** (iteration) | Internal checkpoint, one level finer than a milestone; milestones are unchanged |
 | Owner | **Assignee** | One primary owner per issue (collaborators may be added); **never repeat a name in the title, in a documentation table, or in a document header** |
 | Dependencies | **Native issue relationships** | GitHub blocked-by / blocking |
 | Epic membership | **Native sub-issues** | parent issue with sub-issues; no `epic:*` labels |
@@ -31,7 +33,7 @@ The issue form you pick still matters (it decides the body template); GitHub sim
 
 ## Rules
 
-1. **One home per attribute.** Adding a Project field that mirrors a label (or vice versa) is a contract violation — remove one.
+1. **One home per attribute.** Adding a Project field that mirrors a label (or vice versa) is a contract violation — remove one. The values of Estimate, Start, Target and Checkpoint live only on the Project board — never in issue bodies, documentation or commit messages.
 2. **Labels are for facts an agent can write in one `gh` call.** Workflow state belongs to the Project board, not labels.
 3. **Milestone = commitment.** Assigning a milestone means "this ships in that version/phase". Backlog items carry no milestone.
 4. **Retire, don't accumulate.** When a label or field stops earning its keep, delete it everywhere (see `skills/labels-and-taxonomy/`).
@@ -40,5 +42,5 @@ The issue form you pick still matters (it decides the body template); GitHub sim
 ## Where things are defined
 
 - Labels: `.github/labels.yml` (declarative source of truth; sync = re-run `scripts/bootstrap.sh`)
-- Project fields: created by `scripts/bootstrap.sh`; views are set up manually — `docs/setup/project-views.md`
+- Project: the user-level board for the five implementation repositories, this one included. Issues are added by the board's built-in Auto-add workflow; `Status` is computed by a status-sync workflow outside this repository. Fields `Status`, `Estimate`, `Start`, `Target`, `Checkpoint` and the views are set up on the board — `docs/setup/project-views.md`
 - Native issue types: set automatically by the issue forms in `.github/ISSUE_TEMPLATE/`
