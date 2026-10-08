@@ -96,7 +96,7 @@ then **⋯ → Link a repository** to attach it. Add a single-select field named
 bootstrap warned about a pre-existing project or custom Status options (or
 you want to set them by hand), see `docs/setup/project-views.md`.
 
-The script still cannot create Project views — that remains a manual,
+The script does not create Project views — that remains a manual,
 one-time step; see `docs/setup/project-views.md`.
 
 ### 5. Repo settings

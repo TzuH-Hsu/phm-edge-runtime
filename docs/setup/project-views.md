@@ -1,6 +1,6 @@
 # Project views setup
 
-GitHub's REST/GraphQL API cannot create Project views, so that part of this
+`scripts/bootstrap.sh` does not create Project views, so that part of this
 setup is always done by hand after `scripts/bootstrap.sh` creates the
 Project. The `Status` field's options, however, are
 set automatically (via the GraphQL `updateProjectV2Field` mutation) when
@@ -116,9 +116,9 @@ the board. It needs, in this repository's settings:
 
 - Repository variable `ADD_TO_PROJECT_URL`: the board's URL.
 - Actions secret `ADD_TO_PROJECT_PAT`: a personal access token from an account
-  that can edit the board — classic with the `project` and `repo` scopes, or
-  fine-grained with Projects read and write plus Issues and Pull requests
-  read. `GITHUB_TOKEN` cannot reach a user-level board.
+  that can edit the board: a classic token with the `project` and `repo`
+  scopes (fine-grained tokens do not support a user-owned board).
+  `GITHUB_TOKEN` cannot reach a user-level board.
 
 Until both are set, the workflow fails. Pull requests opened by release-please
 are not added automatically (events raised with `GITHUB_TOKEN` do not trigger
