@@ -40,15 +40,13 @@ values of items already on the board, so do it before items are added:
 3. Delete any leftover options that aren't in the list above.
 4. Pick colors if you want them — not required, purely visual.
 
-If you skipped Project setup entirely (`--skip-project`) and are creating
-the Project by hand, do this step after creating the `Status` field's
-default options (every Project v2 board ships with one).
-
 ## 2. Confirm the planning fields
 
-`scripts/bootstrap.sh` is kept identical to the template and does not create
-these fields; it still creates an `Effort` field (see below). Add any of the
-four that are missing via **+** next to the field headers → **New field**:
+The shared board's fields are added by hand. This repository's
+`scripts/bootstrap.sh` does not create them; its phase 4 would create a
+separate per-repository board with an `Effort` field, so it is skipped
+(`docs/setup/bootstrap.md`). Add any of the four that are missing via **+**
+next to the field headers → **New field**:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -112,7 +110,10 @@ rather than adding a Priority field.
 
 New issues are added to the board by the board's built-in Auto-add workflow;
 this repository needs no secret. Pull requests are not added to the board: an
-issue moves to `In Progress` when a pull request is linked to it.
+issue moves to `In Progress` when a pull request is linked to it, through the
+board's built-in **Pull request linked to issue** workflow (**⋯ → Workflows →
+Pull request linked to issue**), which must be on and set `Status` to
+`In Progress`.
 
 The Auto-add workflow is configured on the board, one per repository, and is
 off until someone turns it on: on the board, open **⋯ → Workflows → Auto-add
@@ -131,6 +132,7 @@ are not added; add them once by hand.
 - [ ] View: By area (table, sliced by `area:*`)
 - [ ] View: Blocked (table, `status:Blocked`)
 - [ ] Auto-add workflow on the board turned on for this repository (`is:issue is:open`)
+- [ ] **Pull request linked to issue** workflow on the board turned on, setting `Status` to `In Progress`
 
 ## See also
 

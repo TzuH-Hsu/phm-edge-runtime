@@ -64,8 +64,9 @@ Manual: **Issues → Milestones → New milestone**, title `v0.1.0`.
 
 ### 4. Project
 
-> This repository keeps `scripts/bootstrap.sh` identical to the template, so
-> phase 4 below still creates a per-repository board with an `Effort` field.
+> This repository's `scripts/bootstrap.sh` is not changed for the shared
+> board: phase 4 below still creates a per-repository board with an `Effort`
+> field.
 > This repository's issues are on a shared user-level board instead: skip the
 > phase with `--skip-project` and check the shared board as
 > `docs/setup/project-views.md` describes.
