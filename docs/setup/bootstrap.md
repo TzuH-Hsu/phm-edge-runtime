@@ -64,6 +64,13 @@ Manual: **Issues → Milestones → New milestone**, title `v0.1.0`.
 
 ### 4. Project
 
+> This repository's `scripts/bootstrap.sh` is not changed for the shared
+> board: phase 4 below still creates a per-repository board with an `Effort`
+> field.
+> This repository's issues are on a shared user-level board instead: skip the
+> phase with `--skip-project` and check the shared board as
+> `docs/setup/project-views.md` describes.
+
 Creates a GitHub Project (v2) titled `<repo name> board`, links it to the
 repository, adds an `Effort` single-select field (`S`/`M`/`L`), and — on the
 project this run itself just created — sets the `Status` field's options to
