@@ -25,7 +25,7 @@ A release must never ship from an unverified state, and version/changelog bookke
    3. `git tag vX.Y.Z` on the merged commit.
    4. `gh release create --generate-notes`, then add the hand-written TLDR.
    Trade-off: fewer moving parts and no bot to maintain, but CHANGELOG/version consistency now depends entirely on human discipline — this is the exact failure mode release-please exists to remove.
-5. **Release readiness is not a milestone query.** Releases are cut by release-please from `main` and are independent of the `M1`–`M4` milestones, which are delivery checkpoints. Before merging the release PR, read every open `priority:p0` / `priority:p1` issue: any that describes a defect in a commit since the last release tag (every commit, before the first release) blocks the release. Compare against the full commit range, not only the changelog, which leaves out hidden types (rule 2).
+5. **Release readiness is not a milestone query.** Releases are cut by release-please from `main` and are independent of the `M1`–`M4` milestones, which are delivery checkpoints. Before merging the release PR, read every open `priority:p0` / `priority:p1` issue: any that describes a defect still present in what `origin/main` would release blocks the release, whether the defect came in since the last release tag or was already in an earlier release. To judge what the release changes, read every commit since the last release tag (every commit, before the first release), not only the changelog, which leaves out hidden types (rule 2).
 6. **Never cut a release with red or skipped CI.** If a validation level was skipped with a `RISK:` line during development, resolve or explicitly accept that risk before the release — don't let it ride silently into a tagged version.
 
 ## How
@@ -35,10 +35,11 @@ Check for open blockers before merging the release PR:
 ```bash
 gh issue list --label "priority:p0" --state open --limit 1000
 gh issue list --label "priority:p1" --state open --limit 1000
+git fetch origin main --tags
 # before the first release there is no tag: then every commit up to origin/main is in range
 last_tag="$(git describe --tags --abbrev=0 origin/main 2>/dev/null || true)"
 git log --oneline "${last_tag:+$last_tag..}origin/main"
-# read each issue against those commits; a defect in any of them blocks the release
+# a defect still present in origin/main blocks the release, whether or not it came in with these commits
 ```
 
 Merge the release-please PR yourself, with squash — the only strategy this repo enables (bootstrap phase 5 sets `allow_merge_commit=false` and `allow_rebase_merge=false`). release-please does not merge its own PR; its next run on `push: main` detects the merged release PR and cuts the tag and GitHub Release:
