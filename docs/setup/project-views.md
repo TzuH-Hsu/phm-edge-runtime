@@ -17,6 +17,11 @@ and `Checkpoint`. `Effort` is retired. Do **not** add
 native issue type, and a mirrored field is a contract violation (see
 `docs/adr/ADR-0003-metadata-single-home.md`).
 
+`Status` is fully automatic. `Backlog`, `Ready` and `Blocked` are computed
+twice a day from `Start` and the issue's blocked-by relations; `In Progress`,
+`In Review` and `Done` are set by PR and issue events. People only maintain
+the issues' blocked-by relations and `Start` on the board.
+
 ## 1. Set Status field options (manual fallback)
 
 `scripts/bootstrap.sh` sets this automatically only on a Project that the

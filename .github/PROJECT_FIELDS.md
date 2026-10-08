@@ -10,7 +10,7 @@ Every issue/PR attribute lives in **exactly one place**. Never dual-write the sa
 | Type (subtype) | `type:*` **labels** | `chore` / `ops` / `docs` / `security` — Task subtypes only |
 | Priority | `priority:*` **labels** | `p0` critical / `p1` milestone-blocking / `p2` important / `p3` polish; Project views filter by label (`label:"priority:p0"`), no Priority field |
 | Area | `area:*` **labels** | This library's own domains — see `.github/labels.yml` |
-| Workflow status | **Project `Status` field** | `Backlog` / `Ready` / `In Progress` / `In Review` / `Blocked` / `Done` |
+| Workflow status | **Project `Status` field** | `Backlog` / `Ready` / `In Progress` / `In Review` / `Blocked` / `Done`. Status is fully automatic: `Backlog`, `Ready` and `Blocked` are computed daily from `Start` and blocked-by by the project-status-sync workflow in the shared board's home repository; `In Progress`, `In Review` and `Done` are set by PR and issue events. People only maintain the issues' blocked-by relations and `Start` on the board. |
 | Target version | **Milestone** | `vX.Y.Z` releases, `gov-*` process phases; **no milestone = backlog** |
 | Estimate | **Project `Estimate` field** (number) | Rough estimate in person-days. Replaces Effort (S/M/L); the Effort field is retired. An issue with a large estimate is split by its implementer into sub-issues before work starts; the parent stays as the progress roll-up (Sub-issues progress) |
 | Schedule | **Project `Start` / `Target` fields** (date) | Scheduled start and finish. Target is the committed date; a milestone's due date is a different layer |
