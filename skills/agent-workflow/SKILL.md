@@ -17,11 +17,13 @@ blanket across the repository.
 
 1. **Work only what a human handed you.** An issue is yours when a human
    assigns it or names it in the conversation. There is no self-service queue:
-   Project `Status` `Ready` means "scoped", not "claimable by agents". Anything
-   you were not given needs an explicit human request naming the work.
-2. **Claim before working.** Claiming = set Status `In Progress` and comment on
-   the issue that you are taking it. No silent claims; two agents must never
-   discover mid-flight they grabbed the same issue.
+   Project `Status` `Ready` is computed by the status sync from `Start` and
+   blocked-by and does not mean an issue can be picked up. Anything you were
+   not given needs an explicit human request naming the work.
+2. **Claim before working.** Claiming = comment on the issue that you are
+   taking it. `Status` moves to `In Progress` on its own when a pull request is
+   linked to the issue; do not set it by hand. No silent claims; two agents
+   must never discover mid-flight they grabbed the same issue.
 3. **Refuse work that is not safe to hand off.** Ambiguous scope, untestable
    acceptance criteria, security-sensitive or destructive changes, or a
    judgment call the human has not yet made — push those back to the issue
@@ -49,7 +51,7 @@ Start on an issue you were handed:
 ```bash
 gh issue view 42 --json title,body,labels,assignees   # confirm scope and acceptance criteria
 gh issue comment 42 --body "Claiming — starting work on a feat/42 branch."
-# set Project Status -> In Progress, branch feat/42-<slug>, open the PR
+# branch feat/42-<slug>, open the PR with "Closes #42" (Status then moves to In Progress)
 ```
 
 The honesty ladder in a PR body — claim only the rung you actually reached:
@@ -72,7 +74,7 @@ then rebase and land PR B. Two agents force-pushing one branch is chaos.
 
 - Starting on an issue nobody handed you because it "looks easy" — the human's
   assignment is the gate, not your read of difficulty.
-- Setting Status `In Progress` but never commenting, so a human cannot tell a
+- Starting work without commenting on the issue, so a human cannot tell a
   live claim from a stale one.
 - Burying a skipped validation level instead of writing the `RISK:` line — a
   reviewer who trusts silent success merges a hole.

@@ -15,7 +15,10 @@ safe to hand to an AI agent without a live conversation.
 ## Rules
 
 1. Always use an issue form (Bug / Feature / Task) — never open a blank issue. The
-   form you pick sets the native GitHub issue type; that type is authoritative.
+   form you pick sets the template; on this personal account the coarse type is
+   carried by the `type:bug` / `type:feature` labels (`.github/PROJECT_FIELDS.md`).
+   After opening an issue from the Bug or Feature form, add the matching label by
+   hand (`gh issue edit N --add-label type:bug`); a Task carries neither.
    Non-interactively (an agent, a script — anything that cannot answer the form's
    prompts), write the body in the shape the form would have rendered (see
    "Non-interactive: no form" below). The labeler reads that shape, not the form.
@@ -78,17 +81,18 @@ The native issue type is separate. On an **organization** repository add
 account leave it out: `gh` **creates the issue, then fails** to set the type and
 exits 1 with `type "Task" not found; available types:` and no URL (GitHub reports
 no types there — see `.github/PROJECT_FIELDS.md`, "When native issue types are
-unavailable"), so a script that retries on failure opens duplicates. There the default is no coarse Type at all; only if the
-adopter has uncommented the `type:bug` / `type:feature` block in `labels.yml` and
-re-run bootstrap do you apply one of those by hand — the one label family the
-labeler leaves alone.
+unavailable"), so a script that retries on failure opens duplicates. There the coarse type is the `type:bug` / `type:feature` label: add
+`--label type:bug` or `--label type:feature` when the form you imitate is Bug or
+Feature, and neither for a Task. The labeler leaves this label family alone, so the
+label stays as set.
 
 Good acceptance criteria read like a test plan:
 
 ```markdown
 - [ ] `make verify` passes on a fresh clone
-- [ ] `gh issue create` via the Feature form produces a native `Feature` type issue
-- [ ] No `type:*`, `priority:*`, or `area:*` label is missing after form submission
+- [ ] An issue opened from the Feature form carries the `type:feature` label
+- [ ] No `priority:*` or `area:*` label is missing after form submission, and a Bug
+      or Feature issue carries `type:bug` / `type:feature`
 - [ ] An issue opened with `--body` in the form's shape carries `priority:*` and
       `area:*` after the labeler run
 ```
@@ -106,7 +110,7 @@ reviewer nothing to check against — rewrite before handing the issue to anyone
   right approach" — that is a human-judgment task; resolve it in the issue first.
 - Using an `epic:*` label or a "blocked by #12" sentence instead of native sub-issues
   and blocked-by links — invisible to automation and easy to let go stale.
-- Opening a blank issue to "save time" — it skips native type assignment and the
+- Opening a blank issue to "save time" — it skips the form's template and the
   priority/area fields entirely, pushing the cleanup onto triage later.
 - An agent opening issues with `--body` prose and no `### Priority` / `### Area`
   sections — every such issue is label-less unless `--label` supplied some, which

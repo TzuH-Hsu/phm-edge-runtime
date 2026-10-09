@@ -1,6 +1,6 @@
 # ADR-0007: Retire the `agent-ok` / `by-agent` label mechanism
 
-- **Status**: Accepted
+- **Status**: Accepted. Partially superseded 2026-10-08: `Ready` is computed by the status sync from `Start` and blocked-by, and `In Progress` is set when a pull request is linked (`docs/setup/project-views.md`)
 - **Date**: 2026-09-07
 
 ## Context

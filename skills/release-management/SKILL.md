@@ -25,16 +25,21 @@ A release must never ship from an unverified state, and version/changelog bookke
    3. `git tag vX.Y.Z` on the merged commit.
    4. `gh release create --generate-notes`, then add the hand-written TLDR.
    Trade-off: fewer moving parts and no bot to maintain, but CHANGELOG/version consistency now depends entirely on human discipline — this is the exact failure mode release-please exists to remove.
-5. **Define release exit criteria per milestone before opening it**, not while triaging what's left. A typical criterion: zero open `priority:p0`/`priority:p1` issues attached to the milestone. Write the criteria into the milestone description.
+5. **Release readiness is not a milestone query.** Releases are cut by release-please from `main` and are independent of the `M1`–`M4` milestones, which are delivery checkpoints. Before merging the release PR, read every open `priority:p0` / `priority:p1` issue: any that describes a defect still present in what `origin/main` would release blocks the release, whether the defect came in since the last release tag or was already in an earlier release. To judge what the release changes, read every commit since the last release tag (every commit, before the first release), not only the changelog, which leaves out hidden types (rule 2).
 6. **Never cut a release with red or skipped CI.** If a validation level was skipped with a `RISK:` line during development, resolve or explicitly accept that risk before the release — don't let it ride silently into a tagged version.
 
 ## How
 
-Check whether the milestone is release-ready:
+Check for open blockers before merging the release PR:
 
 ```bash
-gh issue list --milestone "v0.2.0" --label "priority:p0,priority:p1" --state open
-# empty output = exit criterion met
+gh issue list --label "priority:p0" --state open --limit 1000
+gh issue list --label "priority:p1" --state open --limit 1000
+git fetch origin main --tags
+# before the first release there is no tag: then every commit up to origin/main is in range
+last_tag="$(git describe --tags --abbrev=0 origin/main 2>/dev/null || true)"
+git log --oneline "${last_tag:+$last_tag..}origin/main"
+# a defect still present in origin/main blocks the release, whether or not it came in with these commits
 ```
 
 Merge the release-please PR yourself, with squash — the only strategy this repo enables (bootstrap phase 5 sets `allow_merge_commit=false` and `allow_rebase_merge=false`). release-please does not merge its own PR; its next run on `push: main` detects the merged release PR and cuts the tag and GitHub Release:
@@ -71,7 +76,7 @@ gh release edit v0.2.0 --notes "TLDR: ...\n\n$(gh release view v0.2.0 --json bod
 - Shipping release notes with only the generated Conventional Commit list and no TLDR — accurate for engineers, meaningless for the actual audience of a release announcement.
 - Running both release-please and the manual tag-first flow at once — pick one per repo; running both produces duplicate or conflicting tags.
 - Treating a `0.x` minor bump as automatically non-breaking because "it's not a major" — pre-1.0, minor can break; read the changelog before upgrading dependents.
-- Opening a milestone with no stated exit criteria, then improvising "is this done?" at cut time — define it up front so the decision is a lookup, not a debate.
+- Treating an empty milestone query as release readiness — milestones are delivery checkpoints, not releases, so a query on a version-named milestone finds nothing and proves nothing.
 - The release PR shows no checks and cannot merge. The `ci` run exists but is parked with conclusion `action_required` — GitHub holds workflow runs on PRs opened with the default `GITHUB_TOKEN` (its recursion guard) until someone approves them. Approve the parked run; closing and reopening the PR does not release it:
 
   ```bash

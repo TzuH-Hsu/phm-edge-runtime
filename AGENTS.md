@@ -8,7 +8,7 @@ Agent-specific entry files (`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructi
 
 1. Work from an issue. If no issue exists for what you are about to do, create one first (see `skills/issue-writing/` — non-interactively, write the body in the form's shape so the labeler applies the labels).
 2. Never commit directly to `main`. Branch as `<type>/<issue#>-<slug>` (e.g. `feat/42-label-sync`), open a PR.
-3. Follow the metadata single-home contract in `.github/PROJECT_FIELDS.md` — every attribute (type, priority, area, status, version) lives in exactly one place. Never dual-write.
+3. Follow the metadata single-home contract in `.github/PROJECT_FIELDS.md` — every attribute (type, priority, area, status, milestone) lives in exactly one place. Never dual-write.
 4. Run `make verify` before opening or updating a PR.
 5. Declare skipped validation levels in the PR body: `RISK: <level> not run — <reason>`. Never skip silently.
 6. Never commit `*.local.md` files, secrets, or `.env*` files (only `.env.example` is allowed).
@@ -46,7 +46,7 @@ If this repository deliberately differs from the template it was created from, r
 
 ## Workflow
 
-1. **Issue** — created via issue forms; native type (Bug/Feature/Task) is set by the form; labels for priority/area follow `.github/PROJECT_FIELDS.md`.
+1. **Issue** — created via issue forms; the coarse type is carried by the `type:bug` / `type:feature` labels (neither means Task); labels for priority/area follow `.github/PROJECT_FIELDS.md`.
 2. **Branch** — `<type>/<issue#>-<slug>`; the type is one of the Conventional Commit types this repository uses: `feat`, `fix`, `docs`, `chore`, `refactor`, `ci`, `test`, `perf` (this line is the one home for that list — `scripts/pr-lint.js` enforces it on the branch and its test asserts equality).
 3. **Commits** — Conventional Commits, English, imperative (`feat: add label sync phase to bootstrap`).
 4. **PR** — English title in Conventional Commit format; body follows the PR template: summary, linked issue (`Closes #N`), validation ladder checkboxes, `RISK:` lines, rollback notes. CI fails the PR when the branch name is malformed, or when GitHub reports that the PR does not close exactly one open issue in this repository — the branch's (`scripts/pr-lint.js` asks GitHub which issues the body closes, so a `Closes` line inside code does not count, and neither does an issue linked only in the sidebar — changing that link re-runs no check).
@@ -54,7 +54,7 @@ If this repository deliberately differs from the template it was created from, r
 
 ## AI agent conventions
 
-- **Starting work**: an agent starts on an issue only when a human assigns it or names it in the conversation. There is no self-service queue; Project status `Ready` means "scoped", not "claimable by agents".
+- **Starting work**: an agent starts on an issue only when a human assigns it or names it in the conversation. There is no self-service queue. Project status `Ready` is computed by the status sync from `Start` and blocked-by; it does not mean an issue can be picked up. `In Progress` is set automatically when a pull request is linked to the issue.
 - **Provenance**: commit trailers (`Co-Authored-By`) and the PR author account are the audit trail. No provenance labels, no attribution line in the PR body.
 - **Capability boundaries**: agents may manage issues, labels, milestones, and Project items via `gh`; agents must NOT perform destructive operations (deleting Project fields, force-pushing, rewriting history, changing repo settings) without explicit human approval in the conversation.
 - **Session handoff**: long-running work may keep exactly one gitignored `HANDOVER.local.md` (hard cap ~150 lines, rewrite — don't append — at session end). Durable knowledge gets promoted to issues, ADRs, or skills, then deleted from the handoff file. See `skills/context-handoff/`.

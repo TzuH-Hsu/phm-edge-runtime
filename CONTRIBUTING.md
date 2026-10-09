@@ -39,11 +39,12 @@ skipped level.
 
 ## Issues
 
-- Always use the issue forms — never open a blank issue. The form you pick
-  sets the native GitHub issue type (Bug, Feature, Task).
+- Always use the issue forms — never open a blank issue. The coarse type is
+  carried by the `type:bug` / `type:feature` labels; neither means Task. After
+  opening a Bug or Feature issue, add the matching label by hand.
 - Priority and area labels are applied automatically by the labeler workflow;
   you don't set them by hand.
-- Every piece of issue/PR metadata (type, priority, area, status, version)
+- Every piece of issue/PR metadata (type, priority, area, status, milestone)
   lives in exactly one place. See `.github/PROJECT_FIELDS.md` for the
   single-home contract — never dual-write the same attribute in two places.
 
@@ -80,10 +81,9 @@ Details: `skills/release-management/` (coming) and
 
 ## Milestones
 
-- `vX.Y.Z` — a release commitment; issues attached to it are meant to ship in
-  that release.
-- `gov-*` — process and governance work, not tied to a release.
-- No milestone — backlog; not yet committed to a release.
+- `M1`–`M4` — milestones group work by delivery checkpoint
+  (`.github/PROJECT_FIELDS.md`).
+- No milestone — backlog.
 
 ## What not to commit
 
