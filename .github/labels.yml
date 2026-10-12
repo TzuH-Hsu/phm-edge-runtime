@@ -64,6 +64,10 @@ labels:
     color: 006b75
     description: Health checks, watchdog and failure recovery
 
+  - name: area:queue
+    color: 5319e7
+    description: Disk-backed message queue
+
   - name: area:docs
     color: 1d76db
     description: Documentation and guides
