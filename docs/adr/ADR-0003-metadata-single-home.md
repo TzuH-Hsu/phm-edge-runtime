@@ -1,6 +1,6 @@
 # ADR-0003: Metadata single-home policy
 
-- **Status**: Accepted. Partially superseded 2026-10-08: the Project field set is defined in `.github/PROJECT_FIELDS.md`
+- **Status**: Accepted (Partially superseded 2026-10-08: the coarse type is carried by the `type:bug` / `type:feature` labels, and the Project fields are those in `.github/PROJECT_FIELDS.md` — `Effort` is retired; `Estimate`, `Start`, `Target` and `Checkpoint` are added.)
 - **Date**: 2026-07-03
 
 ## Context
