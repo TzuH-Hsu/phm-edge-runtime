@@ -66,5 +66,6 @@ body:
       options:
         - label: "area:update — Update channels, artifact delivery, atomic switch and rollback"
         - label: "area:health — Health checks, watchdog and failure recovery"
+        - label: "area:queue — Disk-backed message queue"
         - label: "area:docs — Documentation and guides"
         - label: "area:ci — CI workflows and automation"
