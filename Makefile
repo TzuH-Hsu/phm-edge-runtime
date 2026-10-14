@@ -107,11 +107,16 @@ test-one: ## Build build/dev and run only the tests whose name matches TEST=<reg
 clean: ## Remove the build trees (build/ only)
 	rm -rf build
 
+# clang-tidy ignores a .clang-tidy it cannot parse (for example a key its
+# release does not know) and still exits 0, so lint-cpp fails on any message
+# from --dump-config first. The header filter is anchored to this checkout, so
+# headers under build/ (downloaded test dependencies) are never checked.
 lint-cpp: configure ## Check C++ formatting (clang-format) and static analysis (clang-tidy)
 	@test -n "$(CLANG_FORMAT)" || { echo 'install: brew install llvm, then put "$$(brew --prefix llvm)/bin" on PATH'; exit 1; }
 	@test -n "$(CLANG_TIDY)" || { echo 'install: brew install llvm, then put "$$(brew --prefix llvm)/bin" on PATH'; exit 1; }
 	$(CXX_SOURCES) | xargs -0 -r $(CLANG_FORMAT) --dry-run --Werror
-	$(CLANG_TIDY) --verify-config
+	@err="$$($(CLANG_TIDY) --dump-config 2>&1 >/dev/null)"; \
+	if [ -n "$$err" ]; then echo "$$err" >&2; echo "clang-tidy cannot read .clang-tidy" >&2; exit 1; fi
 	$(CXX_TRANSLATION_UNITS) | xargs -0 -r $(CLANG_TIDY) -p build/dev --quiet --header-filter='^$(CURDIR)/(include|src|tests)/'
 
 verify: lint test ## L0+L1 - canonical local pre-PR gate
