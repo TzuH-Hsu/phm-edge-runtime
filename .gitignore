@@ -25,3 +25,7 @@ node_modules/
 
 # SBOM output (make sbom)
 dist/
+
+# CMake build trees (see CMakePresets.json)
+build/
+CMakeUserPresets.json

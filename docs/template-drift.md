@@ -81,7 +81,8 @@ Files in the template that this repo does not have.
 | .github/workflows/issue-labeler.yml | `runs-on` reads `vars.AUTOMATION_RUNNER_LABELS` | Same per-workflow runner-variable split | #15 |
 | .github/workflows/maintenance.yml | `runs-on` reads `vars.MAINTENANCE_RUNNER_LABELS` | Same per-workflow runner-variable split | bootstrap |
 | .github/workflows/release-please.yml | `runs-on` reads `vars.RELEASE_RUNNER_LABELS` | Same per-workflow runner-variable split | bootstrap |
-| .gitignore | Adds `dist/` | `make sbom` writes SBOM/licence output there | #39 (licence tooling) |
+| .gitignore | Adds `dist/`; adds `build/` and `CMakeUserPresets.json` | `make sbom` writes SBOM/licence output to `dist/`; `build/` holds the CMake build trees | #39 (licence tooling), #81 |
+| .yamllint.yml | Ignores `build/` | The CMake build trees hold downloaded third-party YAML that is not ours to lint | #81 |
 | SECURITY.md | Rewords the bootstrap-phase-6 paragraph to say this repo's copy of `scripts/bootstrap.sh` predates that phase, and points at `gh api ... security_and_analysis` instead | This repo's bootstrap script is older than the phase the template text describes | #18 |
 | Makefile | `check` target runs `scripts/test_check_licenses.py` via `unittest` instead of `check-license-marker.sh`; adds `lint-licenses` and `sbom` targets (syft-based licence check and SBOM/licence-list output) | Licence hygiene and SBOM tooling; `lint-licenses` joined `lint` in #48 (see the row below) | #15, #23, #29, #32, #37, #39 |
 | AGENTS.md | Runner-variable line lists four per-workflow variables instead of one; adds a "Repository policy" section (public-library commit rules: no org/site/equipment names, no captured data, SPDX headers, licence allowlist, no CLA) | Per-workflow runner split, and rules specific to a public standalone library | #15 (runners), #37 (policy section, licence allowlist line) |
@@ -98,6 +99,8 @@ Files in the template that this repo does not have.
 | .github/workflows/ci.yml "Install CI tools" step | Runs a bare `make ci-tools` | The tool list lives in the Makefile (`CI_TOOLS`), so a tool this repository adds needs no YAML change | #48 |
 | Makefile `lint` and `ci-tools` | `lint-licenses` added to `lint`; `ci-tools` installs `CI_TOOLS` by default and sends `EXTRA_CI_TOOLS` (syft) to `scripts/install-extra-tools.sh` | The licence check runs in CI with a pinned syft while `scripts/install-ci-tools.sh` stays identical to the template | #48 |
 | CONTRIBUTING.md tool-install table | Adds a `syft` row | `make lint` now runs `lint-licenses`, which needs syft | #48 |
+| Makefile (C++ build) | `lint` gains `lint-cpp`; `test` runs ctest on the `dev` and `asan-ubsan` builds instead of the template's placeholder; `lint-docs` skips `build/` in markdownlint; `CI_TOOLS`/`EXTRA_CI_TOOLS` add `cmake` and `ninja`; `check-tool-versions` also runs `scripts/check-local-pins.sh`; `lint-licenses` and `sbom` skip `./build` | The C++ build is wired into `make` and CI (the Makefile is the only executable contract); build trees hold test-only downloads that are not delivered | #81 |
+| scripts/install-extra-tools.sh | Also installs `cmake` and `ninja`, checksum verified, at the versions in `scripts/tool-pins.yocto` | CI builds the C++ library with pinned build tools | #81 |
 
 ## Local additions in template directories
 
@@ -113,7 +116,13 @@ Repo-only files under .github/, scripts/, skills/, docs/setup/, docs/adr/ and Ma
 | Makefile `sbom` | Writes an SPDX SBOM and the third-party licence list to `dist/` | bootstrap |
 | docs/template-drift.md | This inventory of deliberate differences from the template | #41 |
 | scripts/tool-pins.extra | Pins for CI tools this repository adds (syft), read by `make check-tool-versions` | #48 |
-| scripts/install-extra-tools.sh | Installs the tools pinned in `scripts/tool-pins.extra`, checksum verified; called by `make ci-tools` | #48 |
+| scripts/install-extra-tools.sh | Installs the tools pinned in `scripts/tool-pins.extra` and `scripts/tool-pins.yocto`, checksum verified; called by `make ci-tools` | #48, #81 |
+| scripts/tool-pins.yocto | CMake/Ninja pins and the Yocto release they follow (plus Ninja's zip sha256); a comparison the template's pin format cannot express | #81 |
+| scripts/check-local-pins.sh | Compares `scripts/tool-pins.yocto` with the recipes of the pinned Yocto release; run by `make check-tool-versions` | #81 |
+| Makefile: `setup`, `configure`, `build`, `test-unit`, `test-sanitize`, `test-one`, `clean`, `lint-cpp` targets | Tool check, C++ build, test, single-test, clean and format/static-analysis entry points (CMake + Ninja + GoogleTest + clang-format/clang-tidy) | #81 |
+| CMakeLists.txt, CMakePresets.json, cmake/, include/, src/, tests/ | CMake skeleton for the library (`dev`, `asan-ubsan` presets) | #81 |
+| .clang-format, .clang-tidy | C++ formatting and static-analysis config for `lint-cpp` | #81 |
+| docs/development.md | Build requirements, common commands and source layout | #81 |
 
 ## Local rules that conflict with kit files
 

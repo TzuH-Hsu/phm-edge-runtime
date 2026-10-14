@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+---
+Checks: >
+  -*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -misc-include-cleaner,
+  -modernize-use-trailing-return-type,
+  -portability-avoid-pragma-once
+WarningsAsErrors: '*'
+# Editors use this filter. `make lint-cpp` passes a --header-filter anchored to
+# the checkout instead, so headers under build/ are never checked; the
+# ExcludeHeaderFilterRegex key would do the same but older clang-tidy releases
+# reject it.
+HeaderFilterRegex: '.*/include/phm/.*|.*/(src|tests)/.*'
+FormatStyle: file
+...
