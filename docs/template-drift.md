@@ -66,6 +66,7 @@ Files in the template that this repo does not have.
 | File | Difference from the template | Why | Since |
 | --- | --- | --- | --- |
 | .github/CODEOWNERS | Extra commented example line for `/scripts/pr-lint.js` | Keeps the example list in step with the PR-lint script added alongside it | #15 |
+| .github/ISSUE_TEMPLATE/feature_request.yml | Adds two optional textareas, `Interface` (id `interface`) and `Examples and test data` (id `examples`), between `Proposed solution` and `Acceptance criteria` | Feature issues here carry the interface and the test data a developer needs to start; the form asks for them | #83 |
 | .github/ISSUE_TEMPLATE/bug_report.yml, feature_request.yml, task.yml | Area options list `area:update`/`area:health`/`area:queue`/`area:docs`/`area:ci` instead of the template's `area:docs`/`area:skills`/`area:ci`/`area:governance` | This repo's own domain split, kept in sync with `.github/labels.yml` | #10 |
 | .github/PROJECT_FIELDS.md | Coarse Type row points at `type:bug`/`type:feature` labels, not native issue type; adds Owner/assignee row and rule 5 | This repo is a personal-account repo, so native issue types are unavailable | #18 (personal-account rewrite), bootstrap (Owner/assignee row and rule 5) |
 | docs/adr/ADR-0003-metadata-single-home.md (status line, 2026-09-02) | Marked partially superseded: the coarse type is carried by the `type:bug` / `type:feature` labels | Native issue types are not available on a personal account | bootstrap |
