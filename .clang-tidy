@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+---
+Checks: >
+  -*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -misc-include-cleaner,
+  -modernize-use-trailing-return-type,
+  -portability-avoid-pragma-once
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*/include/phm/.*|.*/(src|tests)/.*'
+ExcludeHeaderFilterRegex: '.*/build/.*'
+FormatStyle: file
+...

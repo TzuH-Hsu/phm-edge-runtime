@@ -1,0 +1,41 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 28, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "PHM_RUNTIME_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Host build",
+      "inherits": "base"
+    },
+    {
+      "name": "asan-ubsan",
+      "displayName": "Host build with AddressSanitizer and UndefinedBehaviorSanitizer",
+      "inherits": "base",
+      "cacheVariables": { "PHM_RUNTIME_SANITIZE": "ON" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "dev", "configurePreset": "dev" },
+    { "name": "asan-ubsan", "configurePreset": "asan-ubsan" }
+  ],
+  "testPresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    { "name": "dev", "inherits": "base", "configurePreset": "dev" },
+    { "name": "asan-ubsan", "inherits": "base", "configurePreset": "asan-ubsan" }
+  ]
+}

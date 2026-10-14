@@ -1,0 +1,15 @@
+# Build tools pinned to the Yocto release a device image is built with, so the
+# host build and the image build use the same versions. The template's
+# `<tool> <version> <source>` format cannot express this comparison, so these
+# pins live here instead of scripts/tool-pins.extra.
+#
+# `yocto-release <branch>`: the openembedded-core branch the pins follow.
+# `<tool> <version> <recipe> [<sha256>]`: <recipe> names
+#   meta/recipes-devtools/<recipe>/ on that branch; scripts/check-local-pins.sh
+#   compares <version> with the recipe's version. <sha256> is the digest of the
+#   release asset, for tools whose releases carry no checksum file; update it
+#   together with <version>.
+# Read by scripts/check-local-pins.sh (drift) and scripts/install-extra-tools.sh (CI install).
+yocto-release wrynose
+cmake 4.3.1 cmake
+ninja 1.13.2 ninja 5749cbc4e668273514150a80e387a957f933c6ed3f5f11e03fb30955e2bbead6
