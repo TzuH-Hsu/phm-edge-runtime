@@ -84,6 +84,8 @@ export PATH="$HOME/.local/bin:$PATH"
 
 `make ci-tools` is the installer CI runs and installs the versions CI pins: the binaries into `/usr/local/bin` (with `sudo` when that directory is not writable), markdownlint-cli2 with `npm install -g` and yamllint with `pipx` into `~/.local/bin`.
 
+On either system, an `export PATH=…` line lasts only for the current shell; add it to your shell's startup file (for example `~/.zshrc` or `~/.bashrc`) so that a new terminal still finds the tools.
+
 ```bash
 make setup
 ```
