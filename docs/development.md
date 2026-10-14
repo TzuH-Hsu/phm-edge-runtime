@@ -12,7 +12,7 @@ How to build and test the `phm-edge-runtime` library, and how the source tree is
 | clang-format, clang-tidy | The runner image's LLVM in CI; the Makefile prefers `clang-format-22` and `clang-tidy-22` when present | Formatting and static analysis (`make lint-cpp`) |
 | markdownlint-cli2, yamllint, lychee, actionlint, gitleaks, syft, node, python3 | See [`CONTRIBUTING.md`](../CONTRIBUTING.md) | The rest of `make lint` |
 
-macOS: `brew install cmake ninja llvm`, then put `$(brew --prefix llvm)/bin` on `PATH`. The CI versions of CMake and Ninja are pinned in `scripts/tool-pins.yocto`, which follows the Yocto release a device image is built with and is compared with that release's recipes every week.
+The install commands for macOS and Linux are in the README, [Getting started](../README.md#getting-started). The CI versions of CMake and Ninja are pinned in `scripts/tool-pins.yocto`, which follows the Yocto release a device image is built with and is compared with that release's recipes every week.
 
 GoogleTest 1.17.0 is a test-only dependency. CMake uses an installed copy of exactly that version when it finds one; otherwise the first configure downloads the release archive and checks it against the SHA-256 in `cmake/Dependencies.cmake`.
 
