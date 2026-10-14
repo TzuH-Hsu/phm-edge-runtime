@@ -20,7 +20,10 @@ Checks: >
   -modernize-use-trailing-return-type,
   -portability-avoid-pragma-once
 WarningsAsErrors: '*'
+# Editors use this filter. `make lint-cpp` passes --header-filter anchored to
+# the checkout, so headers under build/ (downloaded test dependencies) are never
+# checked; that also works with clang-tidy releases that do not know
+# ExcludeHeaderFilterRegex.
 HeaderFilterRegex: '.*/include/phm/.*|.*/(src|tests)/.*'
-ExcludeHeaderFilterRegex: '.*/build/.*'
 FormatStyle: file
 ...

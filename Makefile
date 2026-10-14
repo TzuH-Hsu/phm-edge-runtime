@@ -111,7 +111,8 @@ lint-cpp: configure ## Check C++ formatting (clang-format) and static analysis (
 	@test -n "$(CLANG_FORMAT)" || { echo 'install: brew install llvm, then put "$$(brew --prefix llvm)/bin" on PATH'; exit 1; }
 	@test -n "$(CLANG_TIDY)" || { echo 'install: brew install llvm, then put "$$(brew --prefix llvm)/bin" on PATH'; exit 1; }
 	$(CXX_SOURCES) | xargs -0 -r $(CLANG_FORMAT) --dry-run --Werror
-	$(CXX_TRANSLATION_UNITS) | xargs -0 -r $(CLANG_TIDY) -p build/dev --quiet
+	$(CLANG_TIDY) --verify-config
+	$(CXX_TRANSLATION_UNITS) | xargs -0 -r $(CLANG_TIDY) -p build/dev --quiet --header-filter='^$(CURDIR)/(include|src|tests)/'
 
 verify: lint test ## L0+L1 - canonical local pre-PR gate
 
