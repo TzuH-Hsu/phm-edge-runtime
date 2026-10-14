@@ -48,6 +48,7 @@ cmake/                 compiler warnings, sanitizers, test dependencies
 ```
 
 - One library target, `phm_edge_runtime`, with the alias `phm_edge_runtime::phm_edge_runtime` for consumers.
+- `cmake --install build/dev --prefix <dir>` installs the public headers and the exported target; a consumer calls `find_package(phm_edge_runtime CONFIG REQUIRED)` and links `phm_edge_runtime::phm_edge_runtime`. The project's warning flags are not part of the installed target.
 - Namespace `phm::runtime`; a component may use a nested namespace.
 - CMake options and cache variables of this project start with `PHM_RUNTIME_`.
 - While the library has no source files it is an INTERFACE library; `src/CMakeLists.txt` shows how the first source file turns it into a static library.

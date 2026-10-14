@@ -15,6 +15,7 @@ option(PHM_RUNTIME_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 option(PHM_RUNTIME_SANITIZE "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+include(GNUInstallDirs)
 include(CompilerWarnings)
 include(Sanitizers)
 
