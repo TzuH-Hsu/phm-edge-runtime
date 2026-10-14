@@ -29,6 +29,34 @@ body:
       required: false
 
   - type: textarea
+    id: interface
+    attributes:
+      label: Interface
+      description: What a developer opens and types. Optional for an idea; complete before the issue is picked up.
+      placeholder: |
+        1. Kinds: library class, set of functions, executable or systemd unit, CLI command, HTTP endpoint, DB migration, CI job...
+        2. Location: repository path, namespace, main header and source file names
+        3. Public interface: C++ header draft (classes, public method signatures, types)
+        4. Error reporting: Result/expected, exception or error code, and in which situations
+        5. Construction and configuration: dependencies through the constructor or a factory; paths and settings from the caller; no globals; no unlisted environment variables
+        6. Lifecycle and threads: create/start/stop order; whether calls from several threads are safe
+        7. Callers and callees: who calls it and when; which interfaces of other issues it calls (issue number and exact name)
+    validations:
+      required: false
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples and test data
+      description: Inputs and expected results the tests use. All values invented.
+      placeholder: |
+        1. Example inputs and expected outputs inline (JSON, hex bytes, a message, a row)
+        2. Fixture files under tests/fixtures/<name>: short ones inline, long ones with how to generate them; the acceptance criteria name the fixture each test uses
+        3. At least one normal, one boundary and one error case, each written "input → expected result"
+    validations:
+      required: false
+
+  - type: textarea
     id: acceptance
     attributes:
       label: Acceptance criteria
