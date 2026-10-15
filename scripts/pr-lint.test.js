@@ -149,6 +149,7 @@ test('only line-start keywords outside code and comments count', () => {
     '> Refs #12', // quote
     'References #12', // a different word
     '<!-- unterminated\nRefs #12', // an unclosed comment hides the rest
+    '```\n<!-- -->```\nRefs #12\n```', // a comment inside a fence is code, not a way to close it
     '<pre>\nNo issue: tidy\n</pre>', // raw HTML code block
     '<PRE lang="md">\nRefs #12\n</PRE>', // any case, with attributes
   ];
@@ -174,6 +175,16 @@ test('a Refs line with something other than issues is reported, not ignored', ()
   assert.match(mixed.problems[0], /cannot read the line 'Refs #3, PR #4'/);
 });
 
+test('a local Refs must name an issue: a pull request or a missing number fails', () => {
+  const asPr = check('docs/x', [], { body: 'Refs #5', refKinds: { 5: 'PullRequest' } });
+  assert.equal(asPr.problems.length, 1);
+  assert.match(asPr.problems[0], /Refs #5 is a pull request, not an issue/);
+  const missing = check('docs/x', [], { body: 'Refs #9999', refKinds: { 9999: null } });
+  assert.equal(missing.problems.length, 1);
+  assert.match(missing.problems[0], /Refs #9999 names no issue in this repository/);
+  assert.deepEqual(check('docs/x', [], { body: 'Refs #5\nRefs o/other#5', refKinds: { 5: 'Issue' } }).problems, []);
+});
+
 test('the PR template body fails until one option is filled in', () => {
   const template = fs.readFileSync(path.join(__dirname, '..', '.github', 'PULL_REQUEST_TEMPLATE.md'), 'utf8');
   const blank = withBody('docs/x', template);
@@ -186,11 +197,18 @@ test('the PR template body fails until one option is filled in', () => {
 
 // A GraphQL client stub: returns the queued answers in order (the last one
 // repeats), or throws what it is given.
-function graphqlStub(answers, updatedAt = '2026-01-01T00:00:00Z', body = '') {
+// `kinds` answers the Refs check: { [number]: 'Issue' | 'PullRequest' | null },
+// 'Issue' when absent, null as GitHub's NOT_FOUND error.
+function graphqlStub(answers, updatedAt = '2026-01-01T00:00:00Z', body = '', kinds = {}) {
   const calls = [];
   let i = 0;
   const github = {
     graphql: async (query, vars) => {
+      if (query.includes('issueOrPullRequest')) {
+        const kind = vars.number in kinds ? kinds[vars.number] : 'Issue';
+        if (kind === null) throw Object.assign(new Error('Could not resolve'), { errors: [{ type: 'NOT_FOUND' }] });
+        return { repository: { issueOrPullRequest: { __typename: kind } } };
+      }
       calls.push(vars);
       const a = answers[Math.min(i++, answers.length - 1)];
       if (a instanceof Error) throw a;
@@ -264,6 +282,15 @@ test('run: reads Refs and No issue from the live body, not the event (a re-run r
   const c = coreSpy();
   await run({ github: both.github, context: ctx(), core: c.core, sleep: noWait });
   assert.deepEqual(c.out, [['info', 'PR lint passed: closes #42; refs #3']]);
+});
+
+test('run: asks GitHub what each local Refs number is, and fails on a pull request or a missing number', async () => {
+  const pull = graphqlStub([[]], undefined, 'Refs #3\nRefs #4\nRefs o/edge#9', { 3: 'PullRequest', 4: null });
+  const { out, core } = coreSpy();
+  await run({ github: pull.github, context: ctx({ head: { ref: 'docs/x' } }), core, sleep: noWait });
+  assert.equal(out[0][0], 'failed');
+  assert.match(out[0][1], /Refs #3 is a pull request/);
+  assert.match(out[0][1], /Refs #4 names no issue/);
 });
 
 test('run: fails with every problem listed', async () => {

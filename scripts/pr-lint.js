@@ -12,7 +12,9 @@
 //      `No issue: <reason>` with a real reason;
 //   3. it closes at most one issue, in this repository, still open (a closed
 //      one cannot be closed by merging); other repositories get `Refs`;
-//   4. a branch that names an issue is backed by `Closes` or `Refs` of it.
+//   4. a branch that names an issue is backed by `Closes` or `Refs` of it;
+//   5. a `Refs` of this repository names an existing issue, not a pull request
+//      (GitHub is asked about each number; other repositories are not checked).
 // Bot PRs (release-please, Dependabot) have no issue and are exempt — by WHO
 // opened them, never by branch name: on a public repository a fork author
 // picks the head branch name, so `release-please--…` proves nothing.
@@ -79,25 +81,41 @@ function isExempt({ author, labels }) {
   return hit ? `carries the '${hit}' label` : null;
 }
 
-// The lines of a PR body that may carry `Refs` or `No issue:`: HTML comments
-// and raw <pre> blocks removed, fenced code blocks (``` or ~~~) skipped.
-// Pure; the rules are the file header's.
+// The lines of a PR body that may carry `Refs` or `No issue:`: fenced code
+// blocks (``` or ~~~) skipped, HTML comments and raw <pre> blocks removed
+// outside them. All are read in source order: inside a fence `<!--` and
+// `<pre>` are code, so they can neither hide nor fake a closing fence. Pure;
+// the rules are the file header's.
 function bodyLines(body) {
-  const text = String(body || '')
-    .replace(/\r\n?/g, '\n')
-    .replace(/<!--[\s\S]*?(?:-->|$)/g, '')
-    .replace(/<pre\b[\s\S]*?(?:<\/pre>|$)/gi, '');
   const out = [];
   let fence = null;
-  for (const line of text.split('\n')) {
-    const m = line.match(/^ {0,3}(`{3,}|~{3,})/);
+  let hidden = null;
+  for (const raw of String(body || '').replace(/\r\n?/g, '\n').split('\n')) {
     if (fence) {
       // A closing fence is the marker and nothing else but spaces.
-      const close = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
+      const close = raw.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
       if (close && close[1][0] === fence[0] && close[1].length >= fence.length) fence = null;
       continue;
     }
-    if (m) { fence = m[1]; continue; }
+    let line = '';
+    let rest = raw;
+    // `hidden` is the end marker of the HTML comment or <pre> block we are in.
+    while (rest.length > 0) {
+      if (hidden) {
+        const end = rest.search(hidden);
+        if (end < 0) break;
+        rest = rest.slice(end).replace(hidden, '');
+        hidden = null;
+      } else {
+        const start = rest.search(/<!--|<pre\b/i);
+        if (start < 0) { line += rest; break; }
+        line += rest.slice(0, start);
+        hidden = rest.startsWith('<!--', start) ? /-->/ : /<\/pre>/i;
+        rest = rest.slice(start + 4); // past `<!--` or `<pre`
+      }
+    }
+    const m = line.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (m) { fence = m[1]; hidden = null; continue; }
     out.push(line);
   }
   return out;
@@ -143,9 +161,11 @@ function isPlaceholderReason(reason) {
 // and `No issue:`. `repo` is this repository's 'owner/name'; a reference to
 // it is local. `author` is the PR author's login and `labels` the PR's label
 // names.
+// `refKinds`, when given, maps each local `Refs` number to what GitHub says it
+// is: 'Issue', 'PullRequest', or null when nothing has that number.
 // Returns { exempt, why, problems: [string], branchIssue, linked: [number],
 // cross: [string], mentioned: [string], noIssue: string|null }.
-function lint({ headRef, refs, body, repo, author, labels }) {
+function lint({ headRef, refs, body, repo, author, labels, refKinds }) {
   const ref = String(headRef || '');
   const all = refs || [];
   const here = String(repo || '').toLowerCase();
@@ -177,6 +197,14 @@ function lint({ headRef, refs, body, repo, author, labels }) {
     );
   }
   const linksIssue = linked.length > 0 || cross.length > 0 || parsed.refs.length > 0;
+  for (const n of localRefs) {
+    const kind = refKinds ? refKinds[n] : 'Issue';
+    if (kind === 'PullRequest') {
+      problems.push(`Refs #${n} is a pull request, not an issue — refer to the issue it works on, or write "No issue: <reason>"`);
+    } else if (kind !== 'Issue') {
+      problems.push(`Refs #${n} names no issue in this repository (a typo, or a deleted issue) — fix the number, or write "No issue: <reason>"`);
+    }
+  }
   if (!linksIssue && noIssue === null) {
     problems.push(
       'the PR body does not say how this PR relates to an issue — put these on lines of their own, outside code and HTML ' +
@@ -229,6 +257,34 @@ function passLine(result) {
   if (result.mentioned.length > 0) parts.push(`refs ${result.mentioned.join(', ')}`);
   if (parts.length === 0) parts.push(`no issue (${result.noIssue})`);
   return `PR lint passed: ${parts.join('; ')}`;
+}
+
+const REF_KIND_QUERY = `query($owner: String!, $repo: String!, $number: Int!) {
+  repository(owner: $owner, name: $repo) {
+    issueOrPullRequest(number: $number) { __typename }
+  }
+}`;
+
+// What each local `Refs` number is: { [number]: 'Issue' | 'PullRequest' | null }.
+// A number nothing has comes back as a NOT_FOUND error; any other failure
+// fails the job, as for the closing read.
+async function refKindsRead(github, owner, repo, numbers) {
+  const kinds = {};
+  for (const number of numbers) {
+    try {
+      const data = await github.graphql(REF_KIND_QUERY, { owner, repo, number });
+      const node = data && data.repository && data.repository.issueOrPullRequest;
+      kinds[number] = node ? node.__typename : null;
+    } catch (err) {
+      const errors = (err && err.errors) || [];
+      if (errors.length > 0 && errors.every((e) => e.type === 'NOT_FOUND')) {
+        kinds[number] = null;
+        continue;
+      }
+      throw new Error(`could not read what #${number} in Refs is: ${err && err.message ? err.message : err}`);
+    }
+  }
+  return kinds;
 }
 
 // One GraphQL read of the issues GitHub will close, and when the PR was last
@@ -312,7 +368,11 @@ async function run({ github, context, core, sleep, pauseMs, now = Date.now }) {
   const refs = await settledRefs(github, context.repo.owner, context.repo.repo, pr.number, { sleep, pauseMs });
   // The live body, not the event's: a manual re-run replays the old event.
   const body = typeof live.body === 'string' ? live.body : pr.body;
-  const result = lint({ headRef: pr.head && pr.head.ref, refs, body, repo, author, labels });
+  const here = repo.toLowerCase();
+  const localNumbers = [...new Set(parseBody(body).refs
+    .filter((r) => r.repo === null || r.repo.toLowerCase() === here).map((r) => r.number))];
+  const refKinds = await refKindsRead(github, context.repo.owner, context.repo.repo, localNumbers);
+  const result = lint({ headRef: pr.head && pr.head.ref, refs, body, repo, author, labels, refKinds });
   if (result.problems.length > 0) {
     core.setFailed(`PR lint failed:\n- ${result.problems.join('\n- ')}`);
     return result;
@@ -321,4 +381,4 @@ async function run({ github, context, core, sleep, pauseMs, now = Date.now }) {
   return result;
 }
 
-module.exports = { run, lint, parseBody, bodyLines, isPlaceholderReason, passLine, closingRead, closingRefs, settledRefs, isExempt, describe, TYPES, BRANCH_RE, EXEMPT_AUTHORS, EXEMPT_LABELS, CLOSING_QUERY };
+module.exports = { run, lint, parseBody, bodyLines, isPlaceholderReason, passLine, closingRead, refKindsRead, closingRefs, settledRefs, isExempt, describe, TYPES, BRANCH_RE, EXEMPT_AUTHORS, EXEMPT_LABELS, CLOSING_QUERY, REF_KIND_QUERY };
