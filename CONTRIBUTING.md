@@ -50,7 +50,7 @@ skipped level.
 
 ## Branches & commits
 
-- Branch name: `<type>/<issue#>-<slug>`, e.g. `feat/42-label-sync`.
+- Branch name: `<type>/<issue#>-<slug>`, e.g. `feat/42-label-sync`, or `<type>/<slug>` when no single issue fits, e.g. `docs/readme-quick-start`. A branch that names an issue needs `Closes` or `Refs` of that issue in the PR body.
 - Commits follow [Conventional Commits](https://www.conventionalcommits.org/):
   using the types listed in `AGENTS.md` (Workflow, step 2).
 - Titles are English, imperative mood: `feat: add label sync phase to bootstrap`.
@@ -61,12 +61,14 @@ skipped level.
 
 - PR title is a Conventional Commit — it becomes the squash commit message on
   `main`, so make it count.
-- Fill in the PR template: summary, linked issue (`Closes #N`), validation
-  ladder checkboxes, and rollback notes.
+- Fill in the PR template: summary, the related issue as `Closes #N` and/or
+  `Refs #N` (several allowed, any repository), or else `No issue: <reason>` on
+  its own, validation ladder checkboxes, and rollback notes.
 - If a validation level applies but you can't run it, say so explicitly:
   `RISK: <level> not run — <reason>`. Never skip a level silently.
 - Solo maintainers may self-merge once CI is green.
-- Keep each PR scoped to one issue — don't bundle unrelated changes.
+- Keep each PR scoped to one piece of work — it closes at most one issue; don't
+  bundle unrelated changes.
 
 ## Releases
 

@@ -15,7 +15,10 @@ code that closes it. Getting the format right keeps `git log`, the changelog, an
 ## Rules
 
 1. Never commit directly to `main`. Branch first, always: `<type>/<issue#>-<slug>`
-   (e.g. `feat/42-label-sync`). The type mirrors the Conventional Commit type.
+   (e.g. `feat/42-label-sync`), or `<type>/<slug>` when no single issue fits
+   (e.g. `docs/readme-quick-start`; the slug starts with a letter). The type
+   mirrors the Conventional Commit type. A branch that names an issue needs
+   `Closes` or `Refs` of it in the PR body (skills/pr-authoring rule 5).
 2. Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/):
    `<type>: <description>`, English, imperative mood, subject line ≤72 chars.
 3. Pick the type deliberately — release-please reads it directly into the changelog:
@@ -65,7 +68,7 @@ git commit -m "feat!: drop support for legacy label schema" \
   -m "BREAKING CHANGE: type:* labels renamed; run scripts/bootstrap.sh to resync"
 
 # Verify branch naming before pushing
-git branch --show-current  # expect <type>/<issue#>-<slug>
+git branch --show-current  # expect <type>/<issue#>-<slug> or <type>/<slug>
 ```
 
 ## Pitfalls

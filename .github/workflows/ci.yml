@@ -24,8 +24,9 @@ on:
     # A SUPERSET of the defaults (opened, synchronize, reopened). `edited` and
     # `ready_for_review` are added so a PR that failed the lint on its body or
     # title turns green when the author fixes it, without a push. (The lint
-    # reads which issues the PR closes live from GitHub, so "Re-run jobs" also
-    # re-checks the current body; the branch name still comes from the payload.)
+    # reads the body and which issues the PR closes live from GitHub, so "Re-run
+    # jobs" also re-checks the current body; the branch name still comes from
+    # the payload.)
     # `labeled` is added because release-please applies `autorelease: pending`
     # AFTER opening the PR; with a PAT-authored release PR that label is what
     # exempts it. Never narrow this list: a `types:` without the three
@@ -80,8 +81,10 @@ jobs:
           persist-credentials: false
 
       # Fails this required check when the head branch is not
-      # <type>/<issue#>-<slug> or the body links no issue — the logic is
-      # scripts/pr-lint.js (ADR-0008), tested by `make check`. Bot PRs are
+      # <type>/<issue#>-<slug> or <type>/<slug>, or the body does not say how
+      # the PR relates to an issue (Closes, Refs or No issue; AGENTS.md
+      # Workflow 4) — the logic is scripts/pr-lint.js (ADR-0008), tested by
+      # `make check`. Bot PRs are
       # exempt by author (dependabot[bot], github-actions[bot]) or by
       # release-please's `autorelease: pending` label — never by branch name.
       # Step-level `if` so the job still reports on push.
