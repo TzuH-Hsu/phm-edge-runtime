@@ -32,8 +32,7 @@
 // `Refs` and `No issue:` have no GitHub counterpart, so bodyLines() reads
 // them, and deliberately reads very little: a line counts only if it STARTS
 // with the keyword (at most three spaces of indent, no list marker or quote),
-// outside fenced code blocks, raw HTML code elements (<pre>, <code>, <script>,
-// <style>, <textarea>) and HTML comments. Inline code cannot start such
+// outside fenced code blocks, raw <pre> blocks and HTML comments. Inline code cannot start such
 // a line, and four spaces of indent is an indented code block. Anything
 // fancier is out of scope by design; the edge cases are pinned in
 // pr-lint.test.js.
@@ -82,16 +81,11 @@ function isExempt({ author, labels }) {
   return hit ? `carries the '${hit}' label` : null;
 }
 
-// Raw HTML elements whose content is code or never shown: a keyword inside
-// one is not a statement about the PR.
-const HIDDEN_TAGS = ['pre', 'code', 'script', 'style', 'textarea'];
-const HIDDEN_START = new RegExp(`<!--|<(${HIDDEN_TAGS.join('|')})\\b`, 'i');
-
 // The lines of a PR body that may carry `Refs` or `No issue:`: fenced code
-// blocks (``` or ~~~) skipped, HTML comments and the HIDDEN_TAGS elements
-// removed outside them. All are read in source order: inside a fence `<!--`
-// and `<pre>` are code, so they can neither hide nor fake a closing fence.
-// Pure; the rules are the file header's.
+// blocks (``` or ~~~) skipped, HTML comments and raw <pre> blocks removed
+// outside them. All are read in source order: inside a fence `<!--` and
+// `<pre>` are code, so they can neither hide nor fake a closing fence. Pure;
+// the rules are the file header's.
 function bodyLines(body) {
   const out = [];
   let fence = null;
@@ -105,7 +99,7 @@ function bodyLines(body) {
     }
     let line = '';
     let rest = raw;
-    // `hidden` is the end marker of the HTML comment or element we are in.
+    // `hidden` is the end marker of the HTML comment or <pre> block we are in.
     while (rest.length > 0) {
       if (hidden) {
         const end = rest.search(hidden);
@@ -113,11 +107,11 @@ function bodyLines(body) {
         rest = rest.slice(end).replace(hidden, '');
         hidden = null;
       } else {
-        const hit = rest.match(HIDDEN_START);
-        if (!hit) { line += rest; break; }
-        line += rest.slice(0, hit.index);
-        hidden = hit[1] ? new RegExp(`</${hit[1]}\\s*>`, 'i') : /-->/;
-        rest = rest.slice(hit.index + hit[0].length); // past `<!--` or `<tag`
+        const start = rest.search(/<!--|<pre\b/i);
+        if (start < 0) { line += rest; break; }
+        line += rest.slice(0, start);
+        hidden = rest.startsWith('<!--', start) ? /-->/ : /<\/pre>/i;
+        rest = rest.slice(start + 4); // past `<!--` or `<pre`
       }
     }
     const m = line.match(/^ {0,3}(`{3,}|~{3,})/);
@@ -129,8 +123,7 @@ function bodyLines(body) {
 
 // Issue numbers start at 1, so #0 is not a reference.
 const REF_TOKEN = /^(?:#([1-9]\d*)|([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)#([1-9]\d*)|https:\/\/github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)\/issues\/([1-9]\d*))$/;
-// Words that are not a reason (compared case-insensitively, with trailing
-// punctuation and spaces stripped).
+// Words that are not a reason (compared case-insensitively, punctuation-stripped).
 const PLACEHOLDER_REASONS = ['', 'na', 'n/a', 'none', 'no', 'tbd', 'todo', 'reason', '<reason>', '原因', '<原因>', '無', '没有', '沒有', '略'];
 
 // Pure. { refs: [{ repo|null, number }], noIssue: [reason], badRefs: [line] }
@@ -159,7 +152,7 @@ function parseBody(body) {
 }
 
 function isPlaceholderReason(reason) {
-  const r = String(reason || '').trim().toLowerCase().replace(/[\p{P}\s]+$/u, '');
+  const r = String(reason || '').trim().toLowerCase().replace(/[.。…!！]+$/, '');
   return PLACEHOLDER_REASONS.includes(r) || !/[a-z一-鿿]/i.test(r);
 }
 

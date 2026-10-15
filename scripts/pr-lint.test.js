@@ -119,8 +119,7 @@ test('No issue: passes with a reason; placeholders and an empty reason fail', ()
   assert.equal(ok.noIssue, 'fix a typo in README');
   assert.deepEqual(withBody('docs/x', 'No issue：修正錯字').problems, []); // full-width colon
   for (const bad of ['No issue:', 'No issue: ', 'No issue: N/A', 'No issue: n/a.', 'No issue: none', 'No issue: TBD',
-    'No issue: -', 'No issue: <reason>', 'No issue: <原因>', 'No issue: 無', 'No issue: 123',
-    'No issue: N/A,', 'No issue: TBD?', 'No issue: none;']) { // trailing punctuation does not make a reason
+    'No issue: -', 'No issue: <reason>', 'No issue: <原因>', 'No issue: 無', 'No issue: 123']) {
     const r = withBody('docs/x', bad);
     assert.equal(r.problems.length, 1, bad);
     assert.match(r.problems[0], /"No issue:" needs a real reason/, bad);
@@ -153,18 +152,12 @@ test('only line-start keywords outside code and comments count', () => {
     '```\n<!-- -->```\nRefs #12\n```', // a comment inside a fence is code, not a way to close it
     '<pre>\nNo issue: tidy\n</pre>', // raw HTML code block
     '<PRE lang="md">\nRefs #12\n</PRE>', // any case, with attributes
-    '<code>\nNo issue: tidy\n</code>', // other raw HTML code elements
-    '<script>\nRefs #12\n</script>',
-    '<style>\nRefs #12\n</style>',
-    '<textarea>\nNo issue: tidy\n</textarea>',
   ];
   for (const body of ignored) {
     const r = parseBody(body);
     assert.deepEqual([r.refs, r.noIssue], [[], []], body);
   }
   assert.deepEqual(parseBody('   Refs #12').refs, [{ repo: null, number: 12 }]); // up to three spaces
-  assert.deepEqual(parseBody('<code>x</code>\nRefs #12').refs, [{ repo: null, number: 12 }]); // after a closed element
-  assert.deepEqual(parseBody('<codex>\nRefs #12').refs, [{ repo: null, number: 12 }]); // only the listed tags hide
   assert.deepEqual(parseBody('```\nx\n```\nRefs #12').refs, [{ repo: null, number: 12 }]); // after a closed fence
   assert.deepEqual(parseBody('```\n```still-code\nRefs #12\n```').refs, []); // a marker with text after it does not close
   assert.deepEqual(parseBody('````\n```\nRefs #12\n````').refs, []); // a shorter marker does not close a longer fence
