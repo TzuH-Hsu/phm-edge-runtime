@@ -37,7 +37,7 @@ Files every adopter owns. They always differ and are never copied from the templ
 | LICENSE | Apache-2.0 full text (template ships MIT) — this repo's licence choice |
 | NOTICE | Apache-2.0 attribution plus MIT attribution for the template-derived scaffolding |
 | .release-please-manifest.json | This repository's own release version |
-| CONTRIBUTING.md | Tool install table order and one wording tweak; process content matches the template |
+| CONTRIBUTING.md | Tool install table order and one wording tweak; process content matches the template except the branch and PR rules (see "Kit files with local changes", #89) |
 | AGENTS.md project sections | The "Repository policy" section (public-library commit rules) and the runner-variable list |
 | .github/CODEOWNERS | No active owner lines (comment-only example block, plus one added example) |
 | .github/labels.yml area:\* set | `area:update`, `area:health`, `area:queue`, `area:docs`, `area:ci` — this library's own domains |
@@ -67,6 +67,9 @@ Files in the template that this repo does not have.
 | --- | --- | --- | --- |
 | .github/CODEOWNERS | Extra commented example line for `/scripts/pr-lint.js` | Keeps the example list in step with the PR-lint script added alongside it | #15 |
 | .github/ISSUE_TEMPLATE/feature_request.yml | Adds two optional textareas, `Interface` (id `interface`) and `Examples and test data` (id `examples`), between `Proposed solution` and `Acceptance criteria` | Feature issues here carry the interface and the test data a developer needs to start; the form asks for them | #83 |
+| scripts/pr-lint.js, scripts/pr-lint.test.js | A PR states its issue relation with `Closes #N`, `Refs #N` or `No issue: <reason>` instead of having to close exactly one issue; the branch may be `<type>/<slug>` without an issue number; `Refs` and `No issue:` are read from line starts outside code and HTML comments | Small fixes and work that advances an issue without finishing it no longer need a throwaway issue just to satisfy the lint | #89 |
+| .github/PULL_REQUEST_TEMPLATE.md | Related issue section offers the three forms behind a `<!-- related-issue -->` placeholder, and the checklist line matches | Same rule as pr-lint | #89 |
+| AGENTS.md (operating rules 1 and 2, Workflow 2 and 4, AI agent conventions), CONTRIBUTING.md, skills/pr-authoring rule 5, skills/branch-and-commit rule 1 | Describe the two branch forms and the three issue relations; the AI agent conventions line says a `Refs` PR does not link its issue, so the board does not move it to `In Progress` | Same rule as pr-lint | #89 |
 | .github/ISSUE_TEMPLATE/bug_report.yml, feature_request.yml, task.yml | Area options list `area:update`/`area:health`/`area:queue`/`area:docs`/`area:ci` instead of the template's `area:docs`/`area:skills`/`area:ci`/`area:governance` | This repo's own domain split, kept in sync with `.github/labels.yml` | #10 |
 | .github/PROJECT_FIELDS.md | Coarse Type row points at `type:bug`/`type:feature` labels, not native issue type; adds Owner/assignee row and rule 5 | This repo is a personal-account repo, so native issue types are unavailable | #18 (personal-account rewrite), bootstrap (Owner/assignee row and rule 5) |
 | docs/adr/ADR-0003-metadata-single-home.md (status line, 2026-09-02) | Marked partially superseded: the coarse type is carried by the `type:bug` / `type:feature` labels | Native issue types are not available on a personal account | bootstrap |

@@ -7,10 +7,12 @@
 //
 // What it enforces — the conventions AGENTS.md states and the PR template
 // carries, which were being broken silently:
-//   1. the head branch is `<type>/<issue#>-<slug>`;
-//   2. the PR closes exactly one issue, in this repository, and it is the
-//      branch's issue;
-//   3. that issue is still open (a closed one cannot be closed by merging).
+//   1. the head branch is `<type>/<issue#>-<slug>` or `<type>/<slug>`;
+//   2. the body says how the PR relates to an issue, in one of two ways: it links issues (`Closes #N` and/or `Refs #N`), or it says
+//      `No issue: <reason>` with a real reason;
+//   3. it closes at most one issue, in this repository, still open (a closed
+//      one cannot be closed by merging); other repositories get `Refs`;
+//   4. a branch that names an issue is backed by `Closes` or `Refs` of it.
 // Bot PRs (release-please, Dependabot) have no issue and are exempt — by WHO
 // opened them, never by branch name: on a public repository a fork author
 // picks the head branch name, so `release-please--…` proves nothing.
@@ -25,6 +27,14 @@
 // earlier version parsed the body itself; nine review rounds of CommonMark
 // corner cases later, it still could not match GitHub (#104).
 //
+// `Refs` and `No issue:` have no GitHub counterpart, so bodyLines() reads
+// them, and deliberately reads very little: a line counts only if it STARTS
+// with the keyword (at most three spaces of indent, no list marker or quote),
+// outside fenced code blocks, raw <pre> blocks and HTML comments. Inline code cannot start such
+// a line, and four spaces of indent is an indented code block. Anything
+// fancier is out of scope by design; the edge cases are pinned in
+// pr-lint.test.js.
+//
 // The field is updated a few seconds after a body edit (measured: 1-9 s). So
 // run() first waits until the PR's last update is at least 15 s old — two
 // equal reads inside the lag window could both be stale — then reads until two
@@ -37,7 +47,9 @@
 // home for this list; pr-lint.test.js asserts the two are equal). The branch
 // type mirrors them.
 const TYPES = ['feat', 'fix', 'docs', 'chore', 'refactor', 'ci', 'test', 'perf'];
-const BRANCH_RE = new RegExp(`^(${TYPES.join('|')})/(\\d+)-[a-z0-9][a-z0-9._-]*$`);
+// `<type>/<issue#>-<slug>` or `<type>/<slug>`. A slug without an issue number
+// starts with a letter, so `fix/7` and `fix/-x` (an empty issue slot) fail.
+const BRANCH_RE = new RegExp(`^(${TYPES.join('|')})/(?:(\\d+)-[a-z0-9][a-z0-9._-]*|[a-z][a-z0-9._-]*)$`);
 // Exempt when the PR was opened by one of these accounts (Dependabot;
 // release-please run with the default GITHUB_TOKEN), or carries the label
 // release-please always applies (covers release-please run with a PAT, where
@@ -49,6 +61,7 @@ const CLOSING_QUERY = `query($owner: String!, $repo: String!, $number: Int!) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $number) {
       updatedAt
+      body
       closingIssuesReferences(first: 20, excludeUserLinked: true) {
         nodes { number state repository { nameWithOwner } }
       }
@@ -66,12 +79,73 @@ function isExempt({ author, labels }) {
   return hit ? `carries the '${hit}' label` : null;
 }
 
+// The lines of a PR body that may carry `Refs` or `No issue:`: HTML comments
+// and raw <pre> blocks removed, fenced code blocks (``` or ~~~) skipped.
+// Pure; the rules are the file header's.
+function bodyLines(body) {
+  const text = String(body || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/<!--[\s\S]*?(?:-->|$)/g, '')
+    .replace(/<pre\b[\s\S]*?(?:<\/pre>|$)/gi, '');
+  const out = [];
+  let fence = null;
+  for (const line of text.split('\n')) {
+    const m = line.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (fence) {
+      // A closing fence is the marker and nothing else but spaces.
+      const close = line.match(/^ {0,3}(`{3,}|~{3,})[ \t]*$/);
+      if (close && close[1][0] === fence[0] && close[1].length >= fence.length) fence = null;
+      continue;
+    }
+    if (m) { fence = m[1]; continue; }
+    out.push(line);
+  }
+  return out;
+}
+
+// Issue numbers start at 1, so #0 is not a reference.
+const REF_TOKEN = /^(?:#([1-9]\d*)|([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)#([1-9]\d*)|https:\/\/github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)\/issues\/([1-9]\d*))$/;
+// Words that are not a reason (compared case-insensitively, punctuation-stripped).
+const PLACEHOLDER_REASONS = ['', 'na', 'n/a', 'none', 'no', 'tbd', 'todo', 'reason', '<reason>', '原因', '<原因>', '無', '没有', '沒有', '略'];
+
+// Pure. { refs: [{ repo|null, number }], noIssue: [reason], badRefs: [line] }
+// from a PR body. `Refs` takes #N, owner/repo#N or an issue URL, several per
+// line, separated by commas or spaces; a `Refs` line with anything else is
+// reported, not silently ignored.
+function parseBody(body) {
+  const refs = [];
+  const noIssue = [];
+  const badRefs = [];
+  for (const line of bodyLines(body)) {
+    const ni = line.match(/^ {0,3}no issue\s*[:：]\s*(.*)$/i);
+    if (ni) { noIssue.push(ni[1].trim()); continue; }
+    const r = line.match(/^ {0,3}refs\s*:?\s+(.*)$/i);
+    if (!r) continue;
+    const tokens = r[1].trim().split(/[\s,，、]+/).filter(Boolean);
+    const parsed = tokens.map((t) => t.match(REF_TOKEN));
+    if (tokens.length === 0 || parsed.some((m) => !m)) { badRefs.push(line.trim()); continue; }
+    for (const m of parsed) {
+      if (m[1]) refs.push({ repo: null, number: Number(m[1]) });
+      else if (m[3]) refs.push({ repo: m[2], number: Number(m[3]) });
+      else refs.push({ repo: m[4], number: Number(m[5]) });
+    }
+  }
+  return { refs, noIssue, badRefs };
+}
+
+function isPlaceholderReason(reason) {
+  const r = String(reason || '').trim().toLowerCase().replace(/[.。…!！]+$/, '');
+  return PLACEHOLDER_REASONS.includes(r) || !/[a-z一-鿿]/i.test(r);
+}
+
 // Pure. `refs` is what GitHub says the PR closes: [{ repo: 'owner/name',
-// number, state: 'OPEN' | 'CLOSED' }]. `repo` is this repository's
-// 'owner/name'; a reference to it is local. `author` is the PR author's login
-// and `labels` the PR's label names.
-// Returns { exempt, why, problems: [string], branchIssue, linked: [number], cross: [string] }.
-function lint({ headRef, refs, repo, author, labels }) {
+// number, state: 'OPEN' | 'CLOSED' }]. `body` is the PR body, read for `Refs`
+// and `No issue:`. `repo` is this repository's 'owner/name'; a reference to
+// it is local. `author` is the PR author's login and `labels` the PR's label
+// names.
+// Returns { exempt, why, problems: [string], branchIssue, linked: [number],
+// cross: [string], mentioned: [string], noIssue: string|null }.
+function lint({ headRef, refs, body, repo, author, labels }) {
   const ref = String(headRef || '');
   const all = refs || [];
   const here = String(repo || '').toLowerCase();
@@ -79,44 +153,60 @@ function lint({ headRef, refs, repo, author, labels }) {
   const local = all.filter(isLocal);
   const linked = [...new Set(local.map((r) => r.number))];
   const cross = all.filter((r) => !isLocal(r)).map(describe);
+  const parsed = parseBody(body);
+  const mentioned = [...new Set(parsed.refs.map((r) => (isLocal(r) ? `#${r.number}` : describe(r))))];
+  const localRefs = new Set(parsed.refs.filter(isLocal).map((r) => r.number));
+  const noIssue = parsed.noIssue.length > 0 ? parsed.noIssue[0] : null;
+  const base = { branchIssue: null, linked, cross, mentioned, noIssue };
   const why = isExempt({ author, labels });
   if (why) {
-    return { exempt: true, why, problems: [], branchIssue: null, linked, cross };
+    return { exempt: true, why, problems: [], ...base };
   }
   const problems = [];
   const branch = ref.match(BRANCH_RE);
-  const branchIssue = branch ? Number(branch[2]) : null;
+  const branchIssue = branch && branch[2] ? Number(branch[2]) : null;
   if (!branch) {
     problems.push(
-      `branch '${ref}' is not <type>/<issue#>-<slug> (types: ${TYPES.join(', ')}; e.g. fix/42-label-sync) — ` +
-        'the usual slip is an empty issue number, which reads as "<type>/-<slug>"',
+      `branch '${ref}' is not <type>/<issue#>-<slug> or <type>/<slug> (types: ${TYPES.join(', ')}; ` +
+        'e.g. fix/42-label-sync or docs/readme-quick-start) — the usual slip is an empty issue number, which reads as "<type>/-<slug>"',
     );
   }
-  if (linked.length === 0) {
+  for (const line of parsed.badRefs) {
     problems.push(
-      'this PR closes no issue in this repository — the PR template line is `Closes #<!-- issue number -->`; replace the ' +
-        'comment with the number. Any GitHub closing keyword works (Closes / Fixes / Resolves, #N or a full issue URL) in ' +
-        'prose — not in code or an HTML comment. An issue linked only in the sidebar does not count (changing that link ' +
-        're-runs no check). A number that is a pull request, or an issue that was deleted, closes nothing. If this PR only ' +
-        'advances an issue, give it a sub-issue it can close — ' +
-        'skills/pr-authoring rule 5',
+      `cannot read the line '${line}' — a Refs line lists only issues: #N, owner/repo#N or an issue URL, separated by commas or spaces`,
+    );
+  }
+  const linksIssue = linked.length > 0 || cross.length > 0 || parsed.refs.length > 0;
+  if (!linksIssue && noIssue === null) {
+    problems.push(
+      'the PR body does not say how this PR relates to an issue — put these on lines of their own, outside code and HTML ' +
+        'comments: "Closes #N" (merging finishes issue N in this repository) and/or "Refs #N" (it advances issue N, here ' +
+        'or in another repository, without closing it; several allowed), or else "No issue: <reason>" alone. An issue linked only in ' +
+        'the sidebar does not count (changing that link re-runs no check) — skills/pr-authoring rule 5',
+    );
+  }
+  if (noIssue !== null && linksIssue) {
+    problems.push(
+      'the PR body has both "No issue:" and an issue link (Closes or Refs) — keep the issue link, or keep "No issue: <reason>", not both',
+    );
+  }
+  if (noIssue !== null && isPlaceholderReason(noIssue)) {
+    problems.push(
+      `"No issue:" needs a real reason, got '${noIssue}' — say why no issue exists, e.g. "No issue: fix a typo in README"`,
     );
   }
   if (cross.length > 0) {
     problems.push(
-      `this PR closes ${cross.join(', ')} in another repository — one issue per PR, and it lives here (skills/pr-authoring rule 5); ` +
-        'mention the other issue with "Refs" instead',
+      `this PR closes ${cross.join(', ')} in another repository — a PR here can only close issues here; ` +
+        'write "Refs <owner>/<repo>#N" for the other one',
     );
   }
   if (linked.length > 1) {
     problems.push(
-      `this PR closes #${linked.join(', #')} — one issue per PR (skills/pr-authoring rule 5): keep the one this branch is for, ` +
-        'and close a genuine duplicate by hand after merge',
+      `this PR closes #${linked.join(', #')} — close one issue per PR (skills/pr-authoring rule 5): keep the one this PR ` +
+        'finishes, write "Refs #N" for the others, and close a genuine duplicate by hand after merge',
     );
   } else if (linked.length === 1) {
-    if (branchIssue !== null && linked[0] !== branchIssue) {
-      problems.push(`branch names issue #${branchIssue} but the PR closes #${linked[0]} — one of them is wrong`);
-    }
     const closed = local.find((r) => r.number === linked[0] && String(r.state).toUpperCase() === 'CLOSED');
     if (closed) {
       problems.push(
@@ -124,7 +214,21 @@ function lint({ headRef, refs, repo, author, labels }) {
       );
     }
   }
-  return { exempt: false, why: null, problems, branchIssue, linked, cross };
+  if (branchIssue !== null && !linked.includes(branchIssue) && !localRefs.has(branchIssue)) {
+    problems.push(
+      `branch names issue #${branchIssue} but the PR body neither closes nor refs it — add "Closes #${branchIssue}" or ` +
+        `"Refs #${branchIssue}", or rename the branch to <type>/<slug>`,
+    );
+  }
+  return { exempt: false, why: null, problems, ...base, branchIssue };
+}
+
+function passLine(result) {
+  const parts = [];
+  if (result.linked.length > 0) parts.push(`closes #${result.linked.join(', #')}`);
+  if (result.mentioned.length > 0) parts.push(`refs ${result.mentioned.join(', ')}`);
+  if (parts.length === 0) parts.push(`no issue (${result.noIssue})`);
+  return `PR lint passed: ${parts.join('; ')}`;
 }
 
 // One GraphQL read of the issues GitHub will close, and when the PR was last
@@ -147,6 +251,7 @@ async function closingRead(github, owner, repo, number) {
   if (!pr) throw new Error(`could not read which issues PR #${number} closes: pull request not found`);
   return {
     updatedAt: pr.updatedAt,
+    body: pr.body,
     refs: pr.closingIssuesReferences.nodes.map((n) => ({
       repo: n.repository.nameWithOwner,
       number: n.number,
@@ -205,13 +310,15 @@ async function run({ github, context, core, sleep, pauseMs, now = Date.now }) {
   const left = updated + LAG_MS - now();
   if (left > 0) await wait(left);
   const refs = await settledRefs(github, context.repo.owner, context.repo.repo, pr.number, { sleep, pauseMs });
-  const result = lint({ headRef: pr.head && pr.head.ref, refs, repo, author, labels });
+  // The live body, not the event's: a manual re-run replays the old event.
+  const body = typeof live.body === 'string' ? live.body : pr.body;
+  const result = lint({ headRef: pr.head && pr.head.ref, refs, body, repo, author, labels });
   if (result.problems.length > 0) {
     core.setFailed(`PR lint failed:\n- ${result.problems.join('\n- ')}`);
     return result;
   }
-  core.info(`PR lint passed: branch issue #${result.branchIssue}, the PR closes #${result.linked[0]}`);
+  core.info(passLine(result));
   return result;
 }
 
-module.exports = { run, lint, closingRead, closingRefs, settledRefs, isExempt, describe, TYPES, BRANCH_RE, EXEMPT_AUTHORS, EXEMPT_LABELS, CLOSING_QUERY };
+module.exports = { run, lint, parseBody, bodyLines, isPlaceholderReason, passLine, closingRead, closingRefs, settledRefs, isExempt, describe, TYPES, BRANCH_RE, EXEMPT_AUTHORS, EXEMPT_LABELS, CLOSING_QUERY };

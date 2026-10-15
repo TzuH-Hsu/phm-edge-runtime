@@ -38,7 +38,7 @@ human reviewer and for an agent reviewing another agent's work.
 
    No level that applies to the change may simply be absent from both the checkbox
    list and the RISK lines.
-5. Use `Closes #N` to link the issue — one issue per PR, and every PR closes one: work that spans several PRs gets a sub-issue per PR, never a `Refs #N` PR that leaves the parent open. CI fails the PR when it closes no issue in this repository, more than one, or not the branch's — as GitHub itself reports it for the body, so a `Closes` line inside code or an HTML comment does not count, and neither does an issue linked only in the PR's sidebar, since changing that link re-runs no check (`scripts/pr-lint.js`). Don't bundle unrelated
+5. Say how the PR relates to an issue, each on its own line: `Closes #N` (merging finishes issue N in this repository; one issue, still open), `Refs #N` (advances issue N here, or `owner/repo#N` elsewhere, without closing it; several allowed), or `No issue: <reason>` (a real reason, not `N/A`). `Closes` and `Refs` may appear together; `No issue:` may not appear with either. CI fails the PR when none of the three is there, when `No issue:` meets an issue link, when the reason is a placeholder, when it closes more than one issue, an issue in another repository or a closed one, or when the branch names an issue the body neither closes nor refs (`scripts/pr-lint.js`). Which issues the body closes is GitHub's answer, so a `Closes` line inside code or an HTML comment does not count, and neither does an issue linked only in the PR's sidebar, since changing that link re-runs no check; `Refs` and `No issue:` count only at the start of a line, outside code and HTML comments. Don't bundle unrelated
    changes just because they happened to be worked on together.
 6. Re-run `make verify` after every revision to the PR, not just before the first
    push. A review comment that changes code invalidates the previous green run.
@@ -46,10 +46,10 @@ human reviewer and for an agent reviewing another agent's work.
 ## How
 
 ```bash
-# Open a PR with a Conventional Commit title and the issue number filled in —
-# the template's `Closes #<!-- issue number -->` submitted as-is links nothing,
-# and CI fails the PR on it
-sed 's/Closes #<!-- issue number -->/Closes #42/' .github/PULL_REQUEST_TEMPLATE.md > /tmp/pr-body.md
+# Open a PR with a Conventional Commit title and the related issue filled in —
+# the template's `<!-- related-issue -->` submitted as-is says nothing, and CI
+# fails the PR on it
+sed 's/<!-- related-issue -->/Closes #42/' .github/PULL_REQUEST_TEMPLATE.md > /tmp/pr-body.md
 gh pr create --title "feat: add label sync phase to bootstrap" --body-file /tmp/pr-body.md
 
 # Re-verify before each push after review feedback
@@ -65,7 +65,7 @@ Rollback: revert this PR; no migrations or external state changed
 
 ## Pitfalls
 
-- Leaving the template's `Closes #<!-- issue number -->` untouched, or an empty `Closes #` — the link is silently absent; CI fails the PR and names the line.
+- Leaving the template's `<!-- related-issue -->` untouched, an empty `Closes #`, or `No issue: N/A` — CI fails the PR and says which of the three lines to write.
 
 - Leaving a validation level unchecked with no `RISK:` line — indistinguishable from
   "forgot to run it," which is exactly the ambiguity the RISK convention exists to
@@ -75,7 +75,7 @@ Rollback: revert this PR; no migrations or external state changed
 - Writing `RISK: L3 not run` with no reason — the reason is the point; it's what lets
   a reviewer judge whether the skip is acceptable.
 - Scope creep: fixing an unrelated bug noticed along the way in the same PR — file a
-  new issue instead, keep the PR mapped to one `Closes #N`.
+  new issue instead, keep the PR to one piece of work.
 - Pushing a fix in response to review and calling the ladder still green from the
   first run — re-run `make verify` after every revision.
 

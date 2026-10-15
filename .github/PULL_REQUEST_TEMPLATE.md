@@ -5,7 +5,9 @@
 
 ## Related issue
 
-Closes #<!-- issue number -->
+Replace the comment below with lines of their own: `Closes #N` (merging finishes issue N in this repository) and/or `Refs #N` (advances issue N here or in another repository as `owner/repo#N`, without closing it; several allowed), or else `No issue: <reason>` alone.
+
+<!-- related-issue -->
 
 ## Validation
 
@@ -30,6 +32,6 @@ Rollback: <how to undo this change if needed>
 Before merging:
 
 - [ ] Conventional Commit PR title (`<type>: <description>`)
-- [ ] Linked issue using "Closes #N"
+- [ ] Related issue filled in: `Closes #N`, `Refs #N` or `No issue: <reason>`
 - [ ] No secrets, no `*.local.md` files committed
 - [ ] Documentation updated where affected
