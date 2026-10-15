@@ -20,7 +20,7 @@ Field-deployed edge devices fail at the worst possible moment: mid-update, with 
 
 The reason for the split is simple: a model ships far more often than an operating system, and a model update must never require rebuilding an image.
 
-> **Status: early.** The API is not stable; expect breaking changes before `v1.0`. Language and build system are being settled — see the open issues.
+> **Status: early.** The API is not stable; expect breaking changes before `v1.0`. The code is C++20 and builds with CMake (see [#81](https://github.com/TzuH-Hsu/phm-edge-runtime/issues/81)).
 
 ## Why not just ship a whole image every time
 
