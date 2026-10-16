@@ -135,7 +135,7 @@ Everything else, including the CMake presets and how to list the test names, is 
 
 ## Contributing
 
-Work from an issue, branch as `<type>/<issue#>-<slug>` or `<type>/<slug>`, use Conventional Commits, and open a PR whose body says `Closes #N`, `Refs #N` or `No issue: <reason>`; `No issue:` is for a small change that needs no tracking. `main` is protected: PR required, `ci` must pass. Conventions live in [`AGENTS.md`](AGENTS.md) (canonical) and [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Branch, commit and open a PR as described in [`AGENTS.md`](AGENTS.md) (canonical) and [`CONTRIBUTING.md`](CONTRIBUTING.md): branch names, Conventional Commits and how the PR body states its relation to an issue are defined there. `main` is protected: PR required, `ci` must pass.
 
 Two rules are specific to this repository and non-negotiable:
 
