@@ -1,6 +1,6 @@
 # ADR-0008: Event-driven workflow logic lives in `scripts/`, behind a thin `github-script` caller
 
-- **Status**: Accepted (Partially superseded 2026-10-16: the PR lint no longer requires a `<type>/<issue#>-<slug>` branch or a body that closes an issue — a branch may be `<type>/<slug>`, and the body says `Closes #N`, `Refs #N` or `No issue: <reason>`; its checks are defined in `AGENTS.md` (Workflow, step 4).)
+- **Status**: Accepted (Partially superseded 2026-10-16: the PR lint no longer requires a `<type>/<issue#>-<slug>` branch or a body that closes an issue — a branch may be `<type>/<slug>`, and the body says `Closes #N`, `Refs #N` or `No issue: <reason>`; it needs the token as well as the payload, to read the PR's closing issue references and look up each `Refs #N` of this repository; its checks are defined in `AGENTS.md` (Workflow, step 4).)
 - **Date**: 2026-09-21
 - **Issue**: #14 (ported from github-project-os #49 / #56)
 
