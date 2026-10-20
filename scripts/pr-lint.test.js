@@ -120,7 +120,8 @@ test('No issue: passes with a reason; placeholders and an empty reason fail', ()
   assert.deepEqual(withBody('docs/x', 'NO ISSUE : fix a typo').problems, []); // any case, space before the colon
   assert.equal(withBody('docs/x', 'No issue:fix a typo').noIssue, 'fix a typo'); // no space after the colon
   for (const bad of ['No issue:', 'No issue: ', 'No issue: N/A', 'No issue: n/a.', 'No issue: none', 'No issue: TBD',
-    'No issue: -', 'No issue: <reason>', 'No issue: Reason.', 'No issue: todo!', 'No issue: no', 'No issue: N/A\u2026', 'No issue: TBD...', 'No issue: 123']) {
+    'No issue: -', 'No issue: <reason>', 'No issue: Reason.', 'No issue: todo!', 'No issue: no', 'No issue: N/A\u2026', 'No issue: TBD...',
+    'No issue: none?!', 'No issue: n/a;', 'No issue: TBD :)', 'No issue: <reason>.', 'No issue: 123']) {
     const r = withBody('docs/x', bad);
     assert.equal(r.problems.length, 1, bad);
     assert.match(r.problems[0], /"No issue:" needs a real reason/, bad);

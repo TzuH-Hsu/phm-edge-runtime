@@ -123,7 +123,8 @@ function bodyLines(body) {
 
 // Issue numbers start at 1, so #0 is not a reference.
 const REF_TOKEN = /^(?:#([1-9]\d*)|([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)#([1-9]\d*)|https:\/\/github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)\/issues\/([1-9]\d*))$/;
-// Words that are not a reason (compared case-insensitively, punctuation-stripped).
+// Words that are not a reason (compared case-insensitively, after stripping any trailing
+// characters other than ASCII letters, digits and `>`).
 const PLACEHOLDER_REASONS = ['', 'na', 'n/a', 'none', 'no', 'tbd', 'todo', 'reason', '<reason>'];
 
 // Pure. { refs: [{ repo|null, number }], noIssue: [reason], badRefs: [line] }
@@ -152,7 +153,7 @@ function parseBody(body) {
 }
 
 function isPlaceholderReason(reason) {
-  const r = String(reason || '').trim().toLowerCase().replace(/[.\u2026!]+$/, '');
+  const r = String(reason || '').trim().toLowerCase().replace(/[^a-z0-9>]+$/, '');
   return PLACEHOLDER_REASONS.includes(r) || !/[a-z]/i.test(r);
 }
 
