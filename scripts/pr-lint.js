@@ -152,7 +152,7 @@ function parseBody(body) {
 }
 
 function isPlaceholderReason(reason) {
-  const r = String(reason || '').trim().toLowerCase().replace(/[.!]+$/, '');
+  const r = String(reason || '').trim().toLowerCase().replace(/[.\u2026!]+$/, '');
   return PLACEHOLDER_REASONS.includes(r) || !/[a-z]/i.test(r);
 }
 
