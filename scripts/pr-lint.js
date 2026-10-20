@@ -124,7 +124,7 @@ function bodyLines(body) {
 // Issue numbers start at 1, so #0 is not a reference.
 const REF_TOKEN = /^(?:#([1-9]\d*)|([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)#([1-9]\d*)|https:\/\/github\.com\/([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)\/issues\/([1-9]\d*))$/;
 // Words that are not a reason (compared case-insensitively, punctuation-stripped).
-const PLACEHOLDER_REASONS = ['', 'na', 'n/a', 'none', 'no', 'tbd', 'todo', 'reason', '<reason>', '原因', '<原因>', '無', '没有', '沒有', '略'];
+const PLACEHOLDER_REASONS = ['', 'na', 'n/a', 'none', 'no', 'tbd', 'todo', 'reason', '<reason>'];
 
 // Pure. { refs: [{ repo|null, number }], noIssue: [reason], badRefs: [line] }
 // from a PR body. `Refs` takes #N, owner/repo#N or an issue URL, several per
@@ -135,11 +135,11 @@ function parseBody(body) {
   const noIssue = [];
   const badRefs = [];
   for (const line of bodyLines(body)) {
-    const ni = line.match(/^ {0,3}no issue\s*[:：]\s*(.*)$/i);
+    const ni = line.match(/^ {0,3}no issue\s*:\s*(.*)$/i);
     if (ni) { noIssue.push(ni[1].trim()); continue; }
     const r = line.match(/^ {0,3}refs\s*:?\s+(.*)$/i);
     if (!r) continue;
-    const tokens = r[1].trim().split(/[\s,，、]+/).filter(Boolean);
+    const tokens = r[1].trim().split(/[\s,]+/).filter(Boolean);
     const parsed = tokens.map((t) => t.match(REF_TOKEN));
     if (tokens.length === 0 || parsed.some((m) => !m)) { badRefs.push(line.trim()); continue; }
     for (const m of parsed) {
@@ -152,8 +152,8 @@ function parseBody(body) {
 }
 
 function isPlaceholderReason(reason) {
-  const r = String(reason || '').trim().toLowerCase().replace(/[.。…!！]+$/, '');
-  return PLACEHOLDER_REASONS.includes(r) || !/[a-z一-鿿]/i.test(r);
+  const r = String(reason || '').trim().toLowerCase().replace(/[.!]+$/, '');
+  return PLACEHOLDER_REASONS.includes(r) || !/[a-z]/i.test(r);
 }
 
 // Pure. `refs` is what GitHub says the PR closes: [{ repo: 'owner/name',
