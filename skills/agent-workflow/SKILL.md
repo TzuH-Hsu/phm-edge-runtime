@@ -32,10 +32,11 @@ blanket across the repository.
    milestones, Project items, branches, PRs. Forbidden without in-conversation
    human approval: force-push, history rewrite, deleting Project fields or
    labels repo-wide, repo settings changes, cutting releases.
-5. **Leave an audit trail.** Provenance is the commit trailer
-   (`Co-Authored-By`) and the PR author account — no labels, no attribution
-   line in the PR body. What the body must carry is exactly what you validated
-   (see rule 6). Reviewers read agent success as a *claim*, not a fact.
+5. **Leave an audit trail.** Provenance is the PR author account — no
+   `Co-Authored-By` or other attribution trailers in commits, no labels, no
+   attribution line in the PR body. What the body must carry is exactly what
+   you validated (see rule 6). Reviewers read agent success as a *claim*, not
+   a fact.
 6. **Report honestly, including what you did not do.** Never over-claim success
    — that is the canonical agent failure. A skipped validation level is a
    `RISK:` line, never silence.
