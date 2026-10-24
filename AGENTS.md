@@ -55,7 +55,7 @@ If this repository deliberately differs from the template it was created from, r
 ## AI agent conventions
 
 - **Starting work**: an agent starts on an issue only when a human assigns it or names it in the conversation. There is no self-service queue. Project status `Ready` is computed by the status sync from `Start` and blocked-by; it does not mean an issue can be picked up. `In Progress` is set automatically when a pull request is linked to the issue — by `Closes #N` in its body or in the sidebar; `Refs #N` does not link it, so an issue advanced only by `Refs` pull requests keeps its status until it is moved by hand or a closing pull request is linked.
-- **Provenance**: commit trailers (`Co-Authored-By`) and the PR author account are the audit trail. No provenance labels, no attribution line in the PR body.
+- **Provenance**: the PR author account is the audit trail. No `Co-Authored-By` or other attribution trailers in commits, no attribution line in the PR body, no provenance labels.
 - **Capability boundaries**: agents may manage issues, labels, milestones, and Project items via `gh`; agents must NOT perform destructive operations (deleting Project fields, force-pushing, rewriting history, changing repo settings) without explicit human approval in the conversation.
 - **Session handoff**: long-running work may keep exactly one gitignored `HANDOVER.local.md` (hard cap ~150 lines, rewrite — don't append — at session end). Durable knowledge gets promoted to issues, ADRs, or skills, then deleted from the handoff file. See `skills/context-handoff/`.
 
