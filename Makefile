@@ -44,12 +44,14 @@ lint-secrets: ## Scan for committed secrets
 	@command -v gitleaks >/dev/null 2>&1 || { echo "install: brew install gitleaks"; exit 1; }
 	gitleaks detect --no-banner
 
-check: ## Run repo self-consistency scripts (skips scripts not yet added)
+check: ## Run repo self-consistency scripts (skips scripts not yet added) and the SQL column-list check
 	@if [ -x scripts/check-skills.sh ]; then scripts/check-skills.sh; else echo "skip: scripts/check-skills.sh not present yet"; fi
 	@if [ -x scripts/check-local-md.sh ]; then scripts/check-local-md.sh; else echo "skip: scripts/check-local-md.sh not present yet"; fi
 	@if [ -x scripts/check-label-forms.sh ]; then scripts/check-label-forms.sh; else echo "skip: scripts/check-label-forms.sh not present yet"; fi
 	@if [ -x scripts/check-node-tests.sh ]; then scripts/check-node-tests.sh; else echo "skip: scripts/check-node-tests.sh not present yet"; fi
 	@if [ -f scripts/test_check_licenses.py ]; then PYTHONDONTWRITEBYTECODE=1 python3 -m unittest -q scripts/test_check_licenses.py; else echo "skip: scripts/test_check_licenses.py not present yet"; fi
+	python3 scripts/check-sql.py src
+	PYTHONDONTWRITEBYTECODE=1 python3 -m unittest -q scripts/test_check_sql.py
 
 lint: lint-docs lint-actions lint-secrets lint-cpp lint-licenses check ## L0 - aggregate all lint/consistency checks
 

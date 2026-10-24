@@ -104,6 +104,7 @@ Files in the template that this repo does not have.
 | Makefile `lint` and `ci-tools` | `lint-licenses` added to `lint`; `ci-tools` installs `CI_TOOLS` by default and sends `EXTRA_CI_TOOLS` (syft) to `scripts/install-extra-tools.sh` | The licence check runs in CI with a pinned syft while `scripts/install-ci-tools.sh` stays identical to the template | #48 |
 | CONTRIBUTING.md tool-install table | Adds a `syft` row | `make lint` now runs `lint-licenses`, which needs syft | #48 |
 | Makefile (C++ build) | `lint` gains `lint-cpp`; `test` runs ctest on the `dev` and `asan-ubsan` builds instead of the template's placeholder; `lint-docs` skips `build/` in markdownlint; `CI_TOOLS`/`EXTRA_CI_TOOLS` add `cmake` and `ninja`; `check-tool-versions` also runs `scripts/check-local-pins.sh`; `lint-licenses` and `sbom` skip `./build` | The C++ build is wired into `make` and CI (the Makefile is the only executable contract); build trees hold test-only downloads that are not delivered | #81 |
+| Makefile `check` | Also runs `scripts/check-sql.py src` and its tests `scripts/test_check_sql.py` | Every SQL statement of the disk queue names its columns, so the add-only schema stays readable by older versions (`make verify` enforces it) | #73 |
 | scripts/install-extra-tools.sh | Also installs `cmake` and `ninja`, checksum verified, at the versions in `scripts/tool-pins.yocto` | CI builds the C++ library with pinned build tools | #81 |
 
 ## Local additions in template directories
@@ -127,6 +128,9 @@ Repo-only files under .github/, scripts/, skills/, docs/setup/, docs/adr/ and Ma
 | CMakeLists.txt, CMakePresets.json, cmake/, include/, src/, tests/ | CMake skeleton for the library (`dev`, `asan-ubsan` presets) | #81 |
 | .clang-format, .clang-tidy | C++ formatting and static-analysis config for `lint-cpp` | #81 |
 | docs/development.md | Build requirements, common commands and source layout | #81 |
+| scripts/check-sql.py | Fails on `SELECT *` or an `INSERT` without a column list in any file under `src/`; run by `make check` | #73 |
+| scripts/test_check_sql.py | Unit tests for `scripts/check-sql.py` against `tests/fixtures/sql_check/`, run by `make check` | #73 |
+| docs/disk-queue.md | Behaviour, errors, threads and schema rules of the disk-backed queue | #73 |
 
 ## Local rules that conflict with kit files
 

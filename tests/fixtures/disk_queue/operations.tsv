@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# op	key	timestamp_ms	payload_hex	expected
+enqueue	item-0001	1767225600000	00	stored
+enqueue	item-0002	1767225630000	0001ff00	stored
+enqueue	item-0003	-	-	stored
+enqueue	item-0004	1767225660000	7b2276223a317d	stored
+enqueue	item-0005	1767225661000	ff	stored
+enqueue	item-0006	1767225662000	0a0b	rejected_full
+enqueue	item-0007	1767225663000	0c	rejected_full
+enqueue	item-0008	-	00000000	stored
+enqueue	item-0002	1767225699000	ee	already_stored
+remove	item-0001	-	-	removed
+enqueue	item-0009	1767225670000	01	stored
+remove_as_dropped	item-0004	-	-	removed
+remove	item-0001	-	-	not_found
+remove_as_dropped	item-0003	-	-	error:exempt_not_droppable
