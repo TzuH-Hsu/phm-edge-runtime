@@ -203,7 +203,11 @@ QueueResult<std::optional<FoundItem>> find_item(sqlite3* db, std::string_view ke
 }
 
 QueueResult<TimestampRange> read_range(sqlite3* db, QueueErrc on_error) {
-  Statement stmt(db, "SELECT min(timestamp_ms), max(timestamp_ms) FROM queue_items");
+  // Two scalar subqueries, so each uses the timestamp index for its endpoint;
+  // one min() and max() aggregate would scan every row.
+  Statement stmt(db,
+                 "SELECT (SELECT min(timestamp_ms) FROM queue_items), "
+                 "(SELECT max(timestamp_ms) FROM queue_items)");
   if (stmt.step() != SQLITE_ROW) {
     return sqlite_failure(on_error, db);
   }
@@ -491,11 +495,13 @@ QueueResult<DropRecord> DiskQueue::drop_record() const {
   Impl& q = *impl_;
   const std::lock_guard lock(q.read_mutex);
   sqlite3* db = q.reader.get();
-  // One statement, so the drop record and the full state come from one snapshot.
+  // One statement, so the drop record and the full state come from one snapshot;
+  // each endpoint is a scalar subquery that uses the timestamp index.
   Statement stmt(db,
-                 "SELECT d.dropped_total, d.dropped_from_ms, d.dropped_to_ms, r.min_ms, r.max_ms "
-                 "FROM queue_drop_record AS d, (SELECT min(timestamp_ms) AS min_ms, "
-                 "max(timestamp_ms) AS max_ms FROM queue_items) AS r WHERE d.id = 1");
+                 "SELECT dropped_total, dropped_from_ms, dropped_to_ms, "
+                 "(SELECT min(timestamp_ms) FROM queue_items), "
+                 "(SELECT max(timestamp_ms) FROM queue_items) "
+                 "FROM queue_drop_record WHERE id = 1");
   const int rc = stmt.step();
   if (rc == SQLITE_DONE) {
     return failure(QueueErrc::read_failed, "the drop record row is missing");
