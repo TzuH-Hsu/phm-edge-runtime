@@ -105,7 +105,7 @@ Files in the template that this repo does not have.
 | CONTRIBUTING.md tool-install table | Adds a `syft` row | `make lint` now runs `lint-licenses`, which needs syft | #48 |
 | Makefile (C++ build) | `lint` gains `lint-cpp`; `test` runs ctest on the `dev` and `asan-ubsan` builds instead of the template's placeholder; `lint-docs` skips `build/` in markdownlint; `CI_TOOLS`/`EXTRA_CI_TOOLS` add `cmake` and `ninja`; `check-tool-versions` also runs `scripts/check-local-pins.sh`; `lint-licenses` and `sbom` skip `./build` | The C++ build is wired into `make` and CI (the Makefile is the only executable contract); build trees hold test-only downloads that are not delivered | #81 |
 | scripts/install-extra-tools.sh | Also installs `cmake` and `ninja`, checksum verified, at the versions in `scripts/tool-pins.yocto` | CI builds the C++ library with pinned build tools | #81 |
-| AGENTS.md (AI agent conventions, Provenance), skills/agent-workflow/SKILL.md (rule 5), skills/anti-patterns/SKILL.md (Agent over-trust row and paragraph) | Provenance is the PR author account only; commits carry no `Co-Authored-By` or other attribution trailers | Commits and PR bodies carry no attribution | #94 |
+| AGENTS.md (AI agent conventions, Provenance), skills/agent-workflow/SKILL.md (rule 5), skills/anti-patterns/SKILL.md (Agent over-trust row and paragraph), docs/adr/ADR-0007-retire-agent-labels.md (status line) | Provenance is the PR author account only; commits carry no `Co-Authored-By` or other attribution trailers; ADR-0007 is marked partially superseded | Commits and PR bodies carry no attribution | #94, #95 |
 
 ## Local additions in template directories
 
