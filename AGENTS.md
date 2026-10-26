@@ -108,6 +108,15 @@ Other conventions:
 - Dependency licences are allowed when compliant — downstream users ship commercial products, so no obligation may reach their code. Permissive licences are used directly: MIT, Apache-2.0, BSD, ISC, plus notice-only licences (curl, blessing, Zlib, PSF-2.0, PostgreSQL, BSL-1.0, CC-BY-4.0). Weak copyleft is allowed under conditions — LGPL through dynamic linking only (under LGPL-3.0 where the licence allows it), MPL-2.0 for unmodified files with source available — and each such component needs an entry in `scripts/licence-exceptions.json` stating its condition, with the distributor conditions written in this repository's own documentation. Strong copyleft (GPL, AGPL, SSPL) is not linked. Development-only dependencies are not checked.
 - Contributions are provided under Apache-2.0 by default (Apache-2.0 §5). No CLA.
 
+## Code Review Rules
+
+When reviewing a pull request, check the following and report only actual problems:
+
+- **Issue and documentation**: compare the change with the linked issue's Contract and Interface, and with what `README.md`, `docs/development.md` and the public headers state. Flag behaviour that differs from them.
+- **Update safety and data loss**: an artifact is never switched to before its signature is verified, and no path skips that check; the switch is atomic and rolls back when the health check fails or power is lost mid-update; persisted state is not lost or corrupted on restart; artifact unpacking cannot write outside its target directory; key material is not logged or written world-readable.
+- **Public API and on-disk compatibility**: changes under `include/phm/runtime/` (signatures, types, enum values, error results) and to on-disk state, manifest and artifact formats, configuration files and command-line interfaces. Flag breaking changes the pull request does not call out, and changes that stop a device running the previous version from upgrading or rolling back.
+- Do not comment on formatting, naming, include order or anything `make lint` catches.
+
 ## Pointers
 
 - Process and conventions for humans: `CONTRIBUTING.md`
