@@ -1,0 +1,2 @@
+// SPDX-License-Identifier: Apache-2.0
+constexpr const char* kSql = "INSERT INTO queue_items VALUES (?, ?, ?)";
