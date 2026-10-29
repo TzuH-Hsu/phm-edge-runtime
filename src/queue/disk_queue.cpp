@@ -266,6 +266,11 @@ QueueResult<Connection> open_connection(const std::string& file, int flags) {
     return sqlite_failure(QueueErrc::open_failed, db.get());
   }
   sqlite3_extended_result_codes(db.get(), 1);
+  // A negative value reads the limit without changing it.
+  if (const int limit = sqlite3_limit(db.get(), SQLITE_LIMIT_LENGTH, -1);
+      limit < 0 || static_cast<std::size_t>(limit) < kMaxRowBytes) {
+    return failure(QueueErrc::open_failed, "SQLite's length limit is below kMaxRowBytes");
+  }
   if (const int code = detail::configure_connection(db.get()); code != SQLITE_OK) {
     return sqlite_failure(QueueErrc::open_failed, code,
                           "cannot set journal_mode = WAL and synchronous = FULL");

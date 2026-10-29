@@ -23,8 +23,15 @@ using Timestamp = std::chrono::sys_time<std::chrono::milliseconds>;
 
 // Limits checked before anything is written.
 inline constexpr std::size_t kMaxKeyBytes = 256;
-inline constexpr std::size_t kMaxPayloadBytes =
-    1'000'000'000;  // SQLite's default SQLITE_MAX_LENGTH
+// SQLite's default SQLITE_MAX_LENGTH. It caps a whole row, not only one BLOB;
+// open() fails when the linked SQLite allows less.
+inline constexpr std::size_t kMaxRowBytes = 1'000'000'000;
+// A schema version 1 row is a record header of at most 10 bytes (its own size
+// and one serial type each for seq, item_key, timestamp_ms and payload), an
+// 8-byte timestamp, the key and the payload. 1 KiB covers the 18 bytes and
+// leaves room for the columns a later schema version may add.
+inline constexpr std::size_t kRowOverheadBytes = 1024;
+inline constexpr std::size_t kMaxPayloadBytes = kMaxRowBytes - kMaxKeyBytes - kRowOverheadBytes;
 inline constexpr std::int32_t kMaxItemCount = 2'147'483'647;
 
 // One item to enqueue. The views must stay valid for the duration of the call.
@@ -82,7 +89,8 @@ struct DropRecord {
 enum class QueueErrc : std::uint8_t {
   invalid_argument,      // bad key, payload size, span or batch size; nothing touched
   open_failed,           // the file cannot be opened or created, is not a SQLite database,
-                         // or WAL / synchronous FULL / the schema could not be applied
+                         // WAL / synchronous FULL / the schema could not be applied, or
+                         // the linked SQLite's length limit is below kMaxRowBytes
   write_failed,          // a write transaction did not commit; nothing changed
   read_failed,           // a read statement failed
   item_limit_reached,    // kMaxItemCount items are stored; not counted as a drop

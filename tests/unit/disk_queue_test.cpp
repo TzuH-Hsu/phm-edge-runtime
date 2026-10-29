@@ -6,10 +6,12 @@
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <future>
 #include <phm/runtime/queue/disk_queue.hpp>
+#include <span>
 #include <stop_token>
 #include <string>
 #include <thread>
@@ -203,6 +205,26 @@ TEST_F(DiskQueueTest, KeyLimits) {
   EXPECT_EQ(queue_->remove("").error().code, QueueErrc::invalid_argument);
   EXPECT_EQ(queue_->remove_as_dropped(too_long).error().code, QueueErrc::invalid_argument);
   EXPECT_EQ(all_items().size(), 1U);
+}
+
+// kMaxPayloadBytes is checked against a real row: the longest key with the
+// largest payload is written, one byte more is refused before any write.
+// Needs about 2 GB of memory and 1 GB of disk.
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
+TEST_F(DiskQueueTest, LargestPayloadIsWritableAndOneByteMoreIsInvalid) {
+  const std::vector<std::byte> payload(kMaxPayloadBytes + 1, std::byte{0x5a});
+  const std::span<const std::byte> largest{payload.data(), kMaxPayloadBytes};
+  const std::string key(kMaxKeyBytes, 'k');
+  const std::string other_key(kMaxKeyBytes, 'o');
+  const auto stored = queue_->enqueue(NewItem{key, at_ms(kT0), largest});
+  ASSERT_TRUE(stored.has_value()) << stored.error().message;
+  EXPECT_EQ(stored.value(), EnqueueOutcome::stored);
+  const auto too_large = queue_->enqueue(NewItem{other_key, at_ms(kT0), payload});
+  ASSERT_FALSE(too_large.has_value());
+  EXPECT_EQ(too_large.error().code, QueueErrc::invalid_argument);
+  const auto depth = queue_->watermark().value();
+  EXPECT_EQ(depth.item_count, 1);
+  EXPECT_EQ(depth.payload_bytes, static_cast<std::int64_t>(kMaxPayloadBytes));
 }
 
 TEST_F(DiskQueueTest, KeysAreComparedByteForByte) {

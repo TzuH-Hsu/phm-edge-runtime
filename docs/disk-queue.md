@@ -20,7 +20,7 @@ queue->remove("sample-000042");       // after the receiver acknowledged it
 
 - One database file, path given by the caller; the directory must exist. The `-wal` and `-shm` files next to it are created as needed.
 - Both connections run with `PRAGMA journal_mode = WAL` and `PRAGMA synchronous = FULL`, read back after setting; any other answer fails `open` with `open_failed`. A write counts as stored only once its transaction has committed.
-- Payloads are stored byte for byte as `BLOB`s and never parsed. Opening an existing file recovers every item that was not deleted, in its original order.
+- Payloads are stored byte for byte as `BLOB`s and never parsed. SQLite's length limit caps the whole row, so `kMaxPayloadBytes` is `kMaxRowBytes` (1,000,000,000) less the longest key and 1 KiB for the record header, the timestamp and columns a later schema may add. Opening an existing file recovers every item that was not deleted, in its original order.
 
 ## Order, keys and removal
 
@@ -50,7 +50,7 @@ queue->remove("sample-000042");       // after the receiver acknowledged it
 | `QueueErrc` | Meaning |
 | --- | --- |
 | `invalid_argument` | Bad key, payload size, span or batch size; nothing was read or written |
-| `open_failed` | The file cannot be opened or created, is not a SQLite database (`sqlite_code` 26), or WAL, synchronous FULL or the schema could not be applied |
+| `open_failed` | The file cannot be opened or created, is not a SQLite database (`sqlite_code` 26), WAL, synchronous FULL or the schema could not be applied, or the linked SQLite's length limit is below `kMaxRowBytes` |
 | `write_failed` | The write transaction did not commit; nothing changed and nothing was counted as a drop |
 | `read_failed` | A read statement failed |
 | `item_limit_reached` | 2,147,483,647 items are stored; not a drop |
