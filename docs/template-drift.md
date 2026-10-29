@@ -107,6 +107,7 @@ Files in the template that this repo does not have.
 | Makefile `check` | Also runs `scripts/check-sql.py src` and its tests `scripts/test_check_sql.py` | Every SQL statement of the disk queue names its columns, so the add-only schema stays readable by older versions (`make verify` enforces it) | #73 |
 | scripts/install-extra-tools.sh | Also installs `cmake` and `ninja`, checksum verified, at the versions in `scripts/tool-pins.yocto` | CI builds the C++ library with pinned build tools | #81 |
 | AGENTS.md (AI agent conventions, Provenance), skills/agent-workflow/SKILL.md (rule 5), skills/anti-patterns/SKILL.md (Agent over-trust row and paragraph), docs/adr/ADR-0007-retire-agent-labels.md (status line) | Provenance is the PR author account only; commits carry no `Co-Authored-By` or other attribution trailers; ADR-0007 is marked partially superseded | Commits and PR bodies carry no attribution | #94, #95 |
+| AGENTS.md (Code Review Rules) | Adds a "Code Review Rules" section before "Pointers": what a pull request review checks here (the linked issue and the documentation, update safety and data loss, public API and on-disk compatibility) and that formatting, naming, include order and anything `make lint` catches are out of scope | The template has no repository-specific review criteria; automated pull request review reads them from AGENTS.md | #96 |
 
 ## Local additions in template directories
 
