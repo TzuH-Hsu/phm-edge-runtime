@@ -27,12 +27,12 @@ SELECT_STAR = re.compile(
     re.IGNORECASE,
 )
 # INSERT [OR <action>] INTO <table> followed by anything but "(": VALUES,
-# SELECT or DEFAULT VALUES all mean the statement lists no columns. The table
-# name and the separators after it are one atomic group, so a shorter name
-# cannot be backtracked into to dodge the "(" test.
+# SELECT or DEFAULT VALUES all mean the statement lists no columns. The two
+# lookaheads stop a backtrack into a shorter table name or fewer separators
+# from dodging the "(" test (an atomic group would need Python 3.11).
 INSERT_WITHOUT_COLUMNS = re.compile(
     r"\b(?:INSERT|REPLACE)" + _SEP + r"(?:OR" + _SEP + r"\w+" + _SEP + r")?INTO" + _SEP
-    + r'(?>(?:\w+\.)?\w+[\s"]*)(?!\()',
+    + r'(?:\w+\.)?\w+(?![\w.])[\s"]*(?![\s"(])',
     re.IGNORECASE,
 )
 

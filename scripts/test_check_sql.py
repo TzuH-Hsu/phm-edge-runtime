@@ -68,6 +68,7 @@ class PatternTest(unittest.TestCase):
         for sql in (
             '"INSERT INTO queue_items(item_key) VALUES (?)"',
             '"INSERT OR IGNORE INTO queue_drop_record (id) VALUES (1)"',
+            '"INSERT INTO main.queue_items (item_key) VALUES (?)"',
         ):
             with self.subTest(sql=sql):
                 self.assertEqual(self.lines(sql), [])
