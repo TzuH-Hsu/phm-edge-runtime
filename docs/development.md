@@ -8,6 +8,7 @@ How to build and test the `phm-edge-runtime` library, and how the source tree is
 | --- | --- | --- |
 | C++ compiler | Any GCC or Clang with C++20 support; CI uses the runner image's GCC | Compiling |
 | CMake | 4.3.1 in CI; 3.28 or later locally | Configure and build |
+| SQLite 3 | The system's development package (`libsqlite3-dev` on Ubuntu; part of the macOS SDK) | The disk queue's storage, found with `find_package(SQLite3)` |
 | Ninja | 1.13.2 in CI | Build |
 | clang-format, clang-tidy | The runner image's LLVM in CI; the Makefile prefers `clang-format-22` and `clang-tidy-22` when present | Formatting and static analysis (`make lint-cpp`) |
 | markdownlint-cli2, yamllint, lychee, actionlint, gitleaks, syft, node, python3 | See [`CONTRIBUTING.md`](../CONTRIBUTING.md) | The rest of `make lint` |
@@ -44,6 +45,7 @@ A build that does not use a preset (for example a recipe build) has `PHM_RUNTIME
 include/phm/runtime/   public headers, included as <phm/runtime/...>
 src/                   library sources and the library target
 tests/unit/            GoogleTest unit tests
+tests/fixtures/        test data: queue operations, schema fixtures, SQL-check samples
 cmake/                 compiler warnings, sanitizers, test dependencies
 ```
 
@@ -51,5 +53,7 @@ cmake/                 compiler warnings, sanitizers, test dependencies
 - `cmake --install build/dev --prefix <dir>` installs the public headers and the exported target; a consumer calls `find_package(phm_edge_runtime CONFIG REQUIRED)` and links `phm_edge_runtime::phm_edge_runtime`. The project's warning flags are not part of the installed target.
 - Namespace `phm::runtime`; a component may use a nested namespace.
 - CMake options and cache variables of this project start with `PHM_RUNTIME_`.
-- While the library has no source files it is an INTERFACE library; `src/CMakeLists.txt` shows how the first source file turns it into a static library.
+- The library is a static library. It links SQLite 3 privately (no public header includes `<sqlite3.h>`) and the platform thread library publicly; the installed package configuration finds both for the consumer.
+- Components: the disk-backed queue, `phm::runtime::queue::DiskQueue` ([`disk-queue.md`](disk-queue.md)).
+- Every SQL statement in `src/` names its columns; `scripts/check-sql.py`, run by `make check`, fails otherwise.
 - Every source file starts with `SPDX-License-Identifier: Apache-2.0`.

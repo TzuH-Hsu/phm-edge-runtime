@@ -48,6 +48,7 @@ There is no published package yet; these steps build from source, from a fresh c
 | CMake | 3.28 or later; CI installs the pinned version | `CMakeLists.txt` (minimum), [`scripts/tool-pins.yocto`](scripts/tool-pins.yocto) (CI pin) |
 | Ninja | CI installs the pinned version | [`scripts/tool-pins.yocto`](scripts/tool-pins.yocto) |
 | clang-format, clang-tidy | The LLVM release of the CI runner image (Ubuntu 24.04 packages) | Runner image |
+| SQLite 3 | The system's development package (headers and library) | `find_package(SQLite3)` in [`CMakeLists.txt`](CMakeLists.txt) |
 | GoogleTest | Exact pinned version, fetched by the first configure | [`cmake/Dependencies.cmake`](cmake/Dependencies.cmake) |
 | markdownlint-cli2, yamllint, lychee, actionlint, gitleaks | CI installs the pinned versions | [`scripts/install-ci-tools.sh`](scripts/install-ci-tools.sh) |
 | syft | CI installs the pinned version | [`scripts/tool-pins.extra`](scripts/tool-pins.extra) |
@@ -66,7 +67,7 @@ The repository has no submodules.
 
 Install the tools, then run `make setup`.
 
-macOS (the compiler and Python come with the Xcode Command Line Tools):
+macOS (the compiler, Python and SQLite come with the Xcode Command Line Tools):
 
 ```bash
 brew install cmake ninja llvm yamllint lychee actionlint gitleaks syft node
@@ -77,7 +78,7 @@ export PATH="$(brew --prefix llvm)/bin:$PATH"
 Linux x86_64 (Ubuntu 24.04, as in CI). Install Node.js 22 or later first, for example with nvm, so that `npm install -g` needs no `sudo`:
 
 ```bash
-sudo apt-get update && sudo apt-get install -y build-essential curl unzip pipx clang-format clang-tidy
+sudo apt-get update && sudo apt-get install -y build-essential curl unzip pipx clang-format clang-tidy libsqlite3-dev
 ALLOW_LOCAL_INSTALL=1 make ci-tools
 export PATH="$HOME/.local/bin:$PATH"
 ```
@@ -112,10 +113,10 @@ make test-one TEST=Skeleton
 ### 6. Run it locally
 
 ```bash
-build/dev/tests/skeleton_test
+build/dev/tests/disk_queue_test
 ```
 
-This is the only program the repository builds today. It compiles every public header and runs one test; it prints `[ RUN      ] Skeleton.PublicHeadersCompile`, ends with `[  PASSED  ] 1 test.` and exits with status 0. The library has no runtime component yet; the first one, the disk-backed queue, arrives with [#73](https://github.com/TzuH-Hsu/phm-edge-runtime/issues/73).
+The repository builds no program of its own yet, only the library and its test programs. `disk_queue_test` runs the disk-backed queue ([`docs/disk-queue.md`](docs/disk-queue.md)) against SQLite files in the system's temporary directory and removes them afterwards; it ends with `[  PASSED  ]` and exits with status 0. `build/dev/tests/skeleton_test` compiles every public header on its own.
 
 ### 7. Before opening a pull request
 

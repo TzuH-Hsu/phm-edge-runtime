@@ -21,6 +21,18 @@ include(Sanitizers)
 
 include(CTest)
 
+# Found here, not in src/, so the tests can link the same imported targets.
+find_package(SQLite3 REQUIRED)
+# CMake 4.3 renamed FindSQLite3's imported target to SQLite3::SQLite3 and
+# deprecated SQLite::SQLite3; older releases (down to the 3.28 minimum) only
+# have SQLite::SQLite3.
+if(TARGET SQLite3::SQLite3)
+  set(PHM_RUNTIME_SQLITE_TARGET SQLite3::SQLite3)
+else()
+  set(PHM_RUNTIME_SQLITE_TARGET SQLite::SQLite3)
+endif()
+find_package(Threads REQUIRED)
+
 add_subdirectory(src)
 
 if(BUILD_TESTING)

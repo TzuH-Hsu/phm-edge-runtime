@@ -1,0 +1,3 @@
+// SPDX-License-Identifier: Apache-2.0
+constexpr const char* kSelect = "SELECT seq, item_key FROM queue_items";
+constexpr const char* kInsert = "INSERT INTO queue_items (item_key, timestamp_ms, payload) VALUES (?, ?, ?)";
