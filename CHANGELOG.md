@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.7...v0.3.0) (2026-11-02)
+
+
+### Features
+
+* add a disk-backed FIFO queue with a time-span bound and a drop record ([#93](https://github.com/TzuH-Hsu/phm-edge-runtime/issues/93)) ([a869d35](https://github.com/TzuH-Hsu/phm-edge-runtime/commit/a869d35650983b2e4914e9f09fd8bdf219819661))
+
 ## [0.2.7](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.6...v0.2.7) (2026-09-29)
 
 
