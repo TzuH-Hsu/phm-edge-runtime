@@ -47,7 +47,7 @@ There is no published package yet; these steps build from source, from a fresh c
 | C++ compiler | GCC or Clang with C++20; CI uses the runner image's GCC | `CMakeLists.txt` (`CMAKE_CXX_STANDARD`) |
 | CMake | 3.28 or later; CI installs the pinned version | `CMakeLists.txt` (minimum), [`scripts/tool-pins.yocto`](scripts/tool-pins.yocto) (CI pin) |
 | Ninja | CI installs the pinned version | [`scripts/tool-pins.yocto`](scripts/tool-pins.yocto) |
-| clang-format, clang-tidy | The LLVM release of the CI runner image (Ubuntu 24.04 packages) | Runner image |
+| clang-format, clang-tidy | LLVM 22; CI uses the runner image's `clang-format-22` and `clang-tidy-22`, and `make lint-cpp` fails in CI on any other release | [`Makefile`](Makefile) (`LLVM_VERSION`) |
 | SQLite 3 | The system's development package (headers and library) | `find_package(SQLite3)` in [`CMakeLists.txt`](CMakeLists.txt) |
 | GoogleTest | Exact pinned version, fetched by the first configure | [`cmake/Dependencies.cmake`](cmake/Dependencies.cmake) |
 | markdownlint-cli2, yamllint, lychee, actionlint, gitleaks | CI installs the pinned versions | [`scripts/install-ci-tools.sh`](scripts/install-ci-tools.sh) |
@@ -75,10 +75,10 @@ npm install -g markdownlint-cli2
 export PATH="$(brew --prefix llvm)/bin:$PATH"
 ```
 
-Linux x86_64 (Ubuntu 24.04, as in CI). Install Node.js 22 or later first, for example with nvm, so that `npm install -g` needs no `sudo`:
+Linux x86_64 (Ubuntu 26.04, as in CI). Install Node.js 22 or later first, for example with nvm, so that `npm install -g` needs no `sudo`:
 
 ```bash
-sudo apt-get update && sudo apt-get install -y build-essential curl unzip pipx clang-format clang-tidy libsqlite3-dev
+sudo apt-get update && sudo apt-get install -y build-essential curl unzip pipx clang-format-22 clang-tidy-22 libsqlite3-dev
 ALLOW_LOCAL_INSTALL=1 make ci-tools
 export PATH="$HOME/.local/bin:$PATH"
 ```
@@ -130,7 +130,7 @@ Runs every lint (`make lint`) and both test builds (`make test`), the same as CI
 
 - **`make ci-tools` stops with `installs from a linux x86_64 release asset`** — it downloads Linux x86_64 release binaries; on macOS or another architecture, install the tools with your package manager as in step 3.
 - **The first `make build` or `make test` fails while downloading GoogleTest** — the first configure of each build tree downloads it from `github.com`, so that host must be reachable (set `https_proxy` if you are behind a proxy); later configures reuse the download until `make clean`.
-- **`make lint-cpp` reports formatting that CI accepts, or the reverse** — clang-format releases format differently; use the LLVM release the CI runner image ships (step 1) and check it with `clang-format --version`.
+- **`make lint-cpp` reports formatting that CI accepts, or the reverse** — clang-format releases format differently; use the pinned LLVM release (step 1); `make lint-cpp` warns when the one it found differs.
 
 Everything else, including the CMake presets and how to list the test names, is in [`docs/development.md`](docs/development.md).
 

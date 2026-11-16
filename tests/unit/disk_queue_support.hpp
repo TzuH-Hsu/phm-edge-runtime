@@ -133,15 +133,18 @@ class RawConnection {
 
 inline NewItem new_item(std::string_view key, std::optional<std::int64_t> timestamp_ms,
                         const std::vector<std::byte>& payload) {
-  return NewItem{key, timestamp_ms ? std::optional<Timestamp>{at_ms(*timestamp_ms)} : std::nullopt,
-                 payload};
+  return NewItem{
+      .key = key,
+      .timestamp = timestamp_ms ? std::optional<Timestamp>{at_ms(*timestamp_ms)} : std::nullopt,
+      .payload = payload};
 }
 
 inline StoredItem stored_item(std::string key, std::optional<std::int64_t> timestamp_ms,
                               std::string_view payload_hex) {
-  return StoredItem{std::move(key),
-                    timestamp_ms ? std::optional<Timestamp>{at_ms(*timestamp_ms)} : std::nullopt,
-                    hex_bytes(payload_hex)};
+  return StoredItem{
+      .key = std::move(key),
+      .timestamp = timestamp_ms ? std::optional<Timestamp>{at_ms(*timestamp_ms)} : std::nullopt,
+      .payload = hex_bytes(payload_hex)};
 }
 
 inline std::vector<std::string> keys_of(const std::vector<StoredItem>& items) {
@@ -189,12 +192,16 @@ inline std::vector<OperationRow> load_operations() {
     if (fields.size() != 5) {
       throw std::runtime_error("operations.tsv: expected 5 fields in: " + line);
     }
-    OperationRow row{fields[0], fields[1], std::nullopt, {}, fields[4]};
-    if (fields[2] != "-") {
-      row.timestamp_ms = std::stoll(fields[2]);
+    OperationRow row{.op = fields.at(0),
+                     .key = fields.at(1),
+                     .timestamp_ms = std::nullopt,
+                     .payload = {},
+                     .expected = fields.at(4)};
+    if (fields.at(2) != "-") {
+      row.timestamp_ms = std::stoll(fields.at(2));
     }
-    if (fields[3] != "-") {
-      row.payload = hex_bytes(fields[3]);
+    if (fields.at(3) != "-") {
+      row.payload = hex_bytes(fields.at(3));
     }
     rows.push_back(std::move(row));
   }
@@ -247,8 +254,9 @@ inline std::string run_operation(DiskQueue& queue, const OperationRow& row) {
 inline void run_rows(DiskQueue& queue, const std::vector<OperationRow>& rows, std::size_t first,
                      std::size_t last) {
   for (std::size_t i = first; i < last && i < rows.size(); ++i) {
-    EXPECT_EQ(run_operation(queue, rows[i]), rows[i].expected)
-        << "row " << (i + 1) << ": " << rows[i].op << " " << rows[i].key;
+    const OperationRow& row = rows.at(i);
+    EXPECT_EQ(run_operation(queue, row), row.expected)
+        << "row " << (i + 1) << ": " << row.op << " " << row.key;
   }
 }
 
