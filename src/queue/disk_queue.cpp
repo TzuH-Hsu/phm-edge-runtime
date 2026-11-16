@@ -28,18 +28,21 @@ struct ConnectionCloser {
 using Connection = std::unique_ptr<sqlite3, ConnectionCloser>;
 
 Unexpected<QueueError> failure(QueueErrc code, std::string message) {
-  return Unexpected<QueueError>{QueueError{code, 0, std::move(message)}};
+  return Unexpected<QueueError>{
+      QueueError{.code = code, .sqlite_code = 0, .message = std::move(message)}};
 }
 
 Unexpected<QueueError> sqlite_failure(QueueErrc code, sqlite3* db) {
-  return Unexpected<QueueError>{QueueError{code, sqlite3_extended_errcode(db), sqlite3_errmsg(db)}};
+  return Unexpected<QueueError>{QueueError{
+      .code = code, .sqlite_code = sqlite3_extended_errcode(db), .message = sqlite3_errmsg(db)}};
 }
 
 Unexpected<QueueError> sqlite_failure(QueueErrc code, int sqlite_code, std::string_view what) {
   std::string message{what};
   message += ": ";
   message += sqlite3_errstr(sqlite_code);
-  return Unexpected<QueueError>{QueueError{code, sqlite_code, std::move(message)}};
+  return Unexpected<QueueError>{
+      QueueError{.code = code, .sqlite_code = sqlite_code, .message = std::move(message)}};
 }
 
 std::int64_t to_ms(Timestamp timestamp) noexcept { return timestamp.time_since_epoch().count(); }
@@ -194,7 +197,8 @@ QueueResult<std::optional<FoundItem>> find_item(sqlite3* db, std::string_view ke
   stmt.bind_blob(1, key.data(), key.size());
   const int rc = stmt.step();
   if (rc == SQLITE_ROW) {
-    return std::optional<FoundItem>{FoundItem{stmt.int64_at(0), stmt.optional_int64_at(1)}};
+    return std::optional<FoundItem>{
+        FoundItem{.seq = stmt.int64_at(0), .timestamp_ms = stmt.optional_int64_at(1)}};
   }
   if (rc == SQLITE_DONE) {
     return std::optional<FoundItem>{};
@@ -211,7 +215,7 @@ QueueResult<TimestampRange> read_range(sqlite3* db, QueueErrc on_error) {
   if (stmt.step() != SQLITE_ROW) {
     return sqlite_failure(on_error, db);
   }
-  return TimestampRange{stmt.optional_int64_at(0), stmt.optional_int64_at(1)};
+  return TimestampRange{.min = stmt.optional_int64_at(0), .max = stmt.optional_int64_at(1)};
 }
 
 QueueResult<std::int64_t> count_items(sqlite3* db, QueueErrc on_error) {
@@ -268,7 +272,7 @@ QueueResult<Connection> open_connection(const std::string& file, int flags) {
   sqlite3_extended_result_codes(db.get(), 1);
   // A negative value reads the limit without changing it.
   if (const int limit = sqlite3_limit(db.get(), SQLITE_LIMIT_LENGTH, -1);
-      limit < 0 || static_cast<std::size_t>(limit) < kMaxRowBytes) {
+      std::cmp_less(limit, kMaxRowBytes)) {
     return failure(QueueErrc::open_failed, "SQLite's length limit is below kMaxRowBytes");
   }
   if (const int code = detail::configure_connection(db.get()); code != SQLITE_OK) {
@@ -356,7 +360,7 @@ QueueResult<EnqueueOutcome> DiskQueue::enqueue(const NewItem& item) {
   }
   Impl& q = *impl_;
   {
-    const std::lock_guard lock(q.write_mutex);
+    const std::scoped_lock lock(q.write_mutex);
     sqlite3* db = q.writer.get();
     WriteTransaction tx(db);
     if (!tx.begun()) {
@@ -398,7 +402,7 @@ QueueResult<RemoveOutcome> DiskQueue::Impl::remove(std::string_view key, bool as
   if (!valid_key(key)) {
     return failure(QueueErrc::invalid_argument, "key must be 1 to 256 bytes");
   }
-  const std::lock_guard lock(write_mutex);
+  const std::scoped_lock lock(write_mutex);
   sqlite3* db = writer.get();
   WriteTransaction tx(db);
   if (!tx.begun()) {
@@ -433,7 +437,7 @@ QueueResult<RemoveOutcome> DiskQueue::remove_as_dropped(std::string_view key) {
 }
 
 QueueResult<std::vector<StoredItem>> DiskQueue::Impl::read_batch(std::int64_t limit) {
-  const std::lock_guard lock(read_mutex);
+  const std::scoped_lock lock(read_mutex);
   sqlite3* db = reader.get();
   Statement stmt(db,
                  "SELECT item_key, timestamp_ms, payload FROM queue_items ORDER BY seq LIMIT ?1");
@@ -452,8 +456,9 @@ QueueResult<std::vector<StoredItem>> DiskQueue::Impl::read_batch(std::int64_t li
       timestamp = from_ms(*ms);
     }
     const std::span<const std::byte> payload = stmt.blob_at(2);
-    items.push_back(
-        StoredItem{key_from_bytes(stmt.blob_at(0)), timestamp, {payload.begin(), payload.end()}});
+    items.push_back(StoredItem{.key = key_from_bytes(stmt.blob_at(0)),
+                               .timestamp = timestamp,
+                               .payload = {payload.begin(), payload.end()}});
   }
 }
 
@@ -478,7 +483,7 @@ QueueResult<std::vector<StoredItem>> DiskQueue::peek_batch(std::size_t max_items
 
 QueueResult<Watermark> DiskQueue::watermark() const {
   Impl& q = *impl_;
-  const std::lock_guard lock(q.read_mutex);
+  const std::scoped_lock lock(q.read_mutex);
   sqlite3* db = q.reader.get();
   Statement stmt(db,
                  "SELECT count(seq), coalesce(sum(length(payload)), 0), min(timestamp_ms) "
@@ -498,7 +503,7 @@ QueueResult<Watermark> DiskQueue::watermark() const {
 
 QueueResult<DropRecord> DiskQueue::drop_record() const {
   Impl& q = *impl_;
-  const std::lock_guard lock(q.read_mutex);
+  const std::scoped_lock lock(q.read_mutex);
   sqlite3* db = q.reader.get();
   // One statement, so the drop record and the full state come from one snapshot;
   // each endpoint is a scalar subquery that uses the timestamp index.
@@ -515,7 +520,8 @@ QueueResult<DropRecord> DiskQueue::drop_record() const {
     return sqlite_failure(QueueErrc::read_failed, db);
   }
   DropRecord record;
-  record.full = range_is_full({stmt.optional_int64_at(3), stmt.optional_int64_at(4)}, q.span_ms);
+  record.full = range_is_full({.min = stmt.optional_int64_at(3), .max = stmt.optional_int64_at(4)},
+                              q.span_ms);
   record.dropped_total = stmt.int64_at(0);
   if (const auto from = stmt.optional_int64_at(1)) {
     record.dropped_from = from_ms(*from);
@@ -528,7 +534,7 @@ QueueResult<DropRecord> DiskQueue::drop_record() const {
 
 QueueResult<bool> DiskQueue::is_full() const {
   Impl& q = *impl_;
-  const std::lock_guard lock(q.read_mutex);
+  const std::scoped_lock lock(q.read_mutex);
   auto range = read_range(q.reader.get(), QueueErrc::read_failed);
   if (!range) {
     return Unexpected<QueueError>{range.error()};
@@ -537,7 +543,7 @@ QueueResult<bool> DiskQueue::is_full() const {
 }
 
 QueueResult<bool> DiskQueue::Impl::has_items() {
-  const std::lock_guard lock(read_mutex);
+  const std::scoped_lock lock(read_mutex);
   sqlite3* db = reader.get();
   Statement stmt(db, "SELECT seq FROM queue_items ORDER BY seq LIMIT 1");
   const int rc = stmt.step();
@@ -549,7 +555,7 @@ QueueResult<bool> DiskQueue::Impl::has_items() {
 
 void DiskQueue::Impl::notify_waiters() {
   {
-    const std::lock_guard lock(wake_mutex);
+    const std::scoped_lock lock(wake_mutex);
     ++generation;
   }
   wake.notify_all();
@@ -568,7 +574,7 @@ QueueResult<WaitOutcome> DiskQueue::wait_for_items(
   for (;;) {
     std::uint64_t seen = 0;
     {
-      const std::lock_guard lock(q.wake_mutex);
+      const std::scoped_lock lock(q.wake_mutex);
       seen = q.generation;
     }
     // An enqueue that commits after this check changes generation, so the

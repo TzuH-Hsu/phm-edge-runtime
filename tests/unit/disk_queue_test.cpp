@@ -129,7 +129,7 @@ TEST_F(DiskQueueTest, DuplicateKeyWhileFullIsAlreadyStoredAndNotADrop) {
   run_rows(*queue_, rows_, 0, 9);  // row 9: item-0002 again
   const auto items = all_items();
   ASSERT_GE(items.size(), 2U);
-  EXPECT_EQ(items[1], stored_item("item-0002", kT0 + 30'000, "0001ff00"));
+  EXPECT_EQ(items.at(1), stored_item("item-0002", kT0 + 30'000, "0001ff00"));
   EXPECT_EQ(queue_->drop_record().value().dropped_total, 2);
 }
 
@@ -188,9 +188,9 @@ TEST_F(DiskQueueTest, ArbitraryBytesRoundTripUnchanged) {
             EnqueueOutcome::stored);
   const auto items = all_items();
   ASSERT_EQ(items.size(), 3U);
-  EXPECT_EQ(items[0].payload, every_value);
-  EXPECT_EQ(items[1].payload, zeros);
-  EXPECT_TRUE(items[2].payload.empty());
+  EXPECT_EQ(items.at(0).payload, every_value);
+  EXPECT_EQ(items.at(1).payload, zeros);
+  EXPECT_TRUE(items.at(2).payload.empty());
   EXPECT_EQ(queue_->watermark().value().payload_bytes, 256 + 5);
 }
 
@@ -216,10 +216,12 @@ TEST_F(DiskQueueTest, LargestPayloadIsWritableAndOneByteMoreIsInvalid) {
   const std::span<const std::byte> largest{payload.data(), kMaxPayloadBytes};
   const std::string key(kMaxKeyBytes, 'k');
   const std::string other_key(kMaxKeyBytes, 'o');
-  const auto stored = queue_->enqueue(NewItem{key, at_ms(kT0), largest});
+  const auto stored =
+      queue_->enqueue(NewItem{.key = key, .timestamp = at_ms(kT0), .payload = largest});
   ASSERT_TRUE(stored.has_value()) << stored.error().message;
   EXPECT_EQ(stored.value(), EnqueueOutcome::stored);
-  const auto too_large = queue_->enqueue(NewItem{other_key, at_ms(kT0), payload});
+  const auto too_large =
+      queue_->enqueue(NewItem{.key = other_key, .timestamp = at_ms(kT0), .payload = payload});
   ASSERT_FALSE(too_large.has_value());
   EXPECT_EQ(too_large.error().code, QueueErrc::invalid_argument);
   const auto depth = queue_->watermark().value();
@@ -371,7 +373,7 @@ TEST_F(DiskQueueTest, OneWriterAndOneSenderKeepTheOrder) {
   }
   writer.join();
   for (int i = 0; i < kItems; ++i) {
-    EXPECT_EQ(received[static_cast<std::size_t>(i)], "item-" + std::to_string(i));
+    EXPECT_EQ(received.at(static_cast<std::size_t>(i)), "item-" + std::to_string(i));
   }
   EXPECT_EQ(queue_->watermark().value(), (Watermark{0, 0, std::nullopt}));
 }

@@ -57,10 +57,14 @@ lint: lint-docs lint-actions lint-secrets lint-cpp lint-licenses check ## L0 - a
 
 # --- C++ build, tests and static analysis --------------------------------------
 # Presets are in CMakePresets.json; each preset builds into build/<preset>.
-# The versioned LLVM tool names are preferred so a machine with several LLVM
-# releases installed uses a known one.
-CLANG_FORMAT ?= $(firstword $(shell command -v clang-format-22 clang-format 2>/dev/null))
-CLANG_TIDY ?= $(firstword $(shell command -v clang-tidy-22 clang-tidy 2>/dev/null))
+# clang-format and clang-tidy are pinned to one LLVM major release: releases
+# format differently and add checks, so another release turns the lint red (or
+# green) without a code change. The versioned tool names are preferred so a
+# machine with several LLVM releases installed uses the pinned one. lint-cpp
+# fails in CI on any other release and warns locally.
+LLVM_VERSION := 22
+CLANG_FORMAT ?= $(firstword $(shell command -v clang-format-$(LLVM_VERSION) clang-format 2>/dev/null))
+CLANG_TIDY ?= $(firstword $(shell command -v clang-tidy-$(LLVM_VERSION) clang-tidy 2>/dev/null))
 CXX_SOURCES = git ls-files -z -- '*.cpp' '*.hpp'
 CXX_TRANSLATION_UNITS = git ls-files -z -- '*.cpp'
 
@@ -116,6 +120,13 @@ clean: ## Remove the build trees (build/ only)
 lint-cpp: configure ## Check C++ formatting (clang-format) and static analysis (clang-tidy)
 	@test -n "$(CLANG_FORMAT)" || { echo 'install: brew install llvm, then put "$$(brew --prefix llvm)/bin" on PATH'; exit 1; }
 	@test -n "$(CLANG_TIDY)" || { echo 'install: brew install llvm, then put "$$(brew --prefix llvm)/bin" on PATH'; exit 1; }
+	@for tool in $(CLANG_FORMAT) $(CLANG_TIDY); do \
+	  major="$$($$tool --version | sed -n 's/.*version \([0-9][0-9]*\)\..*/\1/p' | head -n 1)"; \
+	  if [ "$$major" != "$(LLVM_VERSION)" ]; then \
+	    echo "$$tool is LLVM $${major:-unknown}; lint-cpp is pinned to LLVM $(LLVM_VERSION) (LLVM_VERSION in the Makefile)" >&2; \
+	    if [ -n "$$CI" ]; then exit 1; fi; \
+	  fi; \
+	done
 	$(CXX_SOURCES) | xargs -0 -r $(CLANG_FORMAT) --dry-run --Werror
 	@err="$$($(CLANG_TIDY) --dump-config 2>&1 >/dev/null)"; \
 	if [ -n "$$err" ]; then echo "$$err" >&2; echo "clang-tidy cannot read .clang-tidy" >&2; exit 1; fi
@@ -130,7 +141,8 @@ ci-pr: verify ## Alias of verify; what ci.yml runs
 # this repository adds (EXTRA_CI_TOOLS, pinned in scripts/tool-pins.extra and
 # scripts/tool-pins.yocto) go to scripts/install-extra-tools.sh, so the kit
 # script stays identical to upstream. The C++ compiler, clang-format and
-# clang-tidy come with the runner image.
+# clang-tidy come with the runner image; lint-cpp checks the LLVM release
+# against LLVM_VERSION.
 CI_TOOLS := markdownlint-cli2 yamllint actionlint gitleaks lychee syft cmake ninja
 EXTRA_CI_TOOLS := syft cmake ninja
 TOOLS ?= $(CI_TOOLS)

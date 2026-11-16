@@ -10,7 +10,7 @@ How to build and test the `phm-edge-runtime` library, and how the source tree is
 | CMake | 4.3.1 in CI; 3.28 or later locally | Configure and build |
 | SQLite 3 | The system's development package (`libsqlite3-dev` on Ubuntu; part of the macOS SDK) | The disk queue's storage, found with `find_package(SQLite3)` |
 | Ninja | 1.13.2 in CI | Build |
-| clang-format, clang-tidy | The runner image's LLVM in CI; the Makefile prefers `clang-format-22` and `clang-tidy-22` when present | Formatting and static analysis (`make lint-cpp`) |
+| clang-format, clang-tidy | LLVM 22, pinned by `LLVM_VERSION` in the Makefile; it prefers `clang-format-22` and `clang-tidy-22` when present, and `make lint-cpp` fails in CI (warns locally) on another release | Formatting and static analysis (`make lint-cpp`) |
 | markdownlint-cli2, yamllint, lychee, actionlint, gitleaks, syft, node, python3 | See [`CONTRIBUTING.md`](../CONTRIBUTING.md) | The rest of `make lint` |
 
 The install commands for macOS and Linux are in the README, [Getting started](../README.md#getting-started). The CI versions of CMake and Ninja are pinned in `scripts/tool-pins.yocto`, which follows the Yocto release a device image is built with and is compared with that release's recipes every week.
