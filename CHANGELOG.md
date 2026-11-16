@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.3.0...v0.3.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* pin clang-format and clang-tidy to LLVM 22 and satisfy its checks ([#103](https://github.com/TzuH-Hsu/phm-edge-runtime/issues/103)) ([30f977e](https://github.com/TzuH-Hsu/phm-edge-runtime/commit/30f977e9f03e21e95030bffc063a6fe02e1b98bf))
+
 ## [0.3.0](https://github.com/TzuH-Hsu/phm-edge-runtime/compare/v0.2.7...v0.3.0) (2026-11-02)
 
 
